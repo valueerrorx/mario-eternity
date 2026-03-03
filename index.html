@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <title>Phaser Einführung</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel=stylesheet href=index.css>
+    <script src="phaser.min.js"></script> 
+  </head>
+  <body>
+    <a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
+    <div id=preview name=preview ></div>
+    <div id=stuff>
+        <div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
+        <div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
+    </div>
+
+<script type="text/javascript">
+
+// the phaser.game config object
+var config = {
+    type: Phaser.AUTO,  // Which renderer to use
+    width: 800,         // Canvas width in pixels
+    height: 480,        // Canvas height in pixels
+    parent:"preview",   // ID of the DOM element to add the canvas to
+    physics: {
+        default: 'arcade',       // Which physics engine to use
+        arcade: {
+            gravity: { y: 1200 },
+            debug: true              // paint debug information (hitboxes)
+        }
+    },
+    scene: {        // scene object (also eats array of scenes aka game.states)
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+
+var game = new Phaser.Game(config);  //our game instance - using the config object
+
+
+//runs once - preloads images, soundfiles, maps
+function preload () {   
+
+}
+
+
+// runs once after preload - create world here
+function create () { 
+
+}
+
+
+// runs 60times per second - everything that needs updates goes here..
+function update (){ 
+
+}
+
+
+
+
+
+
+
+
+</script>
+  </body>
+</html>
