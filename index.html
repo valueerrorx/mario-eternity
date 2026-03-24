@@ -41,15 +41,16 @@ let game = new Phaser.Game(config);  //our game instance - using the config obje
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
-  this.load.image('clouds','assets/clouds.jpg')
+    this.load.image('clouds','assets/clouds.jpg')
+    this.load.image('mario','assets/mario.png')
 
 }
 
 
 // runs once after preload - create world here
 function create () { 
-  this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
-
+    this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
+    this.add.sprite(330, 330, 'mario')
 }
 
 
