@@ -50,7 +50,8 @@ function preload () {
 // runs once after preload - create world here
 function create () { 
     this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
-    this.add.sprite(330, 330, 'mario')
+    let player = this.physics.add.sprite(330, 30, 'mario')
+    player.setCollideWorldBounds(true)
 }
 
 
