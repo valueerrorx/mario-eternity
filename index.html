@@ -36,17 +36,19 @@ var config = {
 };
 
 
-var game = new Phaser.Game(config);  //our game instance - using the config object
+let game = new Phaser.Game(config);  //our game instance - using the config object
 
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
+  this.load.image('clouds','assets/clouds.jpg')
 
 }
 
 
 // runs once after preload - create world here
 function create () { 
+  this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
 
 }
 
