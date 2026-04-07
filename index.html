@@ -38,6 +38,10 @@ var config = {
 
 let game = new Phaser.Game(config);  //our game instance - using the config object
 
+// Spielfigur und Tastatur-Objekte (global, damit update() sie nutzen kann)
+let player;
+let cursors;
+let wasd;
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -49,15 +53,47 @@ function preload () {
 
 // runs once after preload - create world here
 function create () { 
+    // Hintergrundbild über ganze Spielfläche
     this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
-    let player = this.physics.add.sprite(330, 30, 'mario')
-    player.setCollideWorldBounds(true)
+    // Mario mit Physik aktivieren
+    player = this.physics.add.sprite(330, 30, 'mario');
+    // Mario bleibt innerhalb des sichtbaren Bereichs
+    player.setCollideWorldBounds(true);
+
+
+    // WASD-Tasten erfassen
+    wasd = this.input.keyboard.addKeys({
+        up: Phaser.Input.Keyboard.KeyCodes.W,
+        left: Phaser.Input.Keyboard.KeyCodes.A,
+        down: Phaser.Input.Keyboard.KeyCodes.S,
+        right: Phaser.Input.Keyboard.KeyCodes.D
+    });
 }
 
 
 // runs 60times per second - everything that needs updates goes here..
 function update (){ 
+    // Laufgeschwindigkeit links/rechts
+    const speed = 220;
 
+
+    // Bewegung nach links
+    if (wasd.left.isDown) {
+        player.setVelocityX(-speed);
+        player.setFlipX(true);
+    // Bewegung nach rechts
+    } else if (wasd.right.isDown) {
+        player.setVelocityX(speed);
+        player.setFlipX(false);
+    // Keine Taste: horizontal stoppen
+    } else {
+        player.setVelocityX(0);
+    }
+
+    // Springen nur, wenn Mario am Boden ist
+    if (wasd.up.isDown && player.body.blocked.down) {
+        player.setVelocityY(-520);
+    }
 }
 
 
