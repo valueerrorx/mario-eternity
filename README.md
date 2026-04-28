@@ -3,6 +3,9 @@
 git clone https://github.com/valueerrorx/mario-eternity.git
 
 
+# alten ordner (aus dem weg räumen) umbenennen
+mv mario-eternity mario-bak
+
 # in meinen eigenen branch wechseln
 git checkout meinbranch
 
@@ -21,3 +24,13 @@ git commit -am "meine commitmessage"
 
 # änderungen hochladen   (username / token)
 git push
+
+
+# branch erstellen 
+git checkout -b neuerbranch
+
+# überprüfen auf welchem zustand das repo ist
+git status
+
+# alle branches listen (git pull vorher)
+git branch -a
