@@ -46,7 +46,9 @@ let wasd;
 //runs once - preloads images, soundfiles, maps
 function preload () {   
     this.load.image('clouds','assets/clouds.jpg')
-    this.load.image('mario','assets/mario.png')
+    //this.load.image('mario','assets/mario.png')
+
+    this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth: 50, frameHeight: 67 })
 
 }
 
@@ -57,13 +59,26 @@ function create () {
     this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
     // Mario mit Physik aktivieren
     player = this.physics.add.sprite(330, 30, 'mario');
+    player.setCircle(28)
     // Mario bleibt innerhalb des sichtbaren Bereichs
     player.setCollideWorldBounds(true);
 
 
+
+this.anims.create( {
+    key: 'walk',
+    frameRate: 16,
+    frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1] })
+
+
+} )
+
+
+
+
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
-        up: Phaser.Input.Keyboard.KeyCodes.W,
+        up: Phaser.Input.Keyboard.KeyCodes.SPACE,
         left: Phaser.Input.Keyboard.KeyCodes.A,
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
@@ -80,11 +95,13 @@ function update (){
     // Bewegung nach links
     if (wasd.left.isDown) {
         player.setVelocityX(-speed);
-        player.setFlipX(true);
+        player.setFlipX(false);
+        player.anims.play('walk', true)
     // Bewegung nach rechts
     } else if (wasd.right.isDown) {
         player.setVelocityX(speed);
-        player.setFlipX(false);
+        player.setFlipX(true);
+        player.anims.play('walk', true)
     // Keine Taste: horizontal stoppen
     } else {
         player.setVelocityX(0);
@@ -93,6 +110,10 @@ function update (){
     // Springen nur, wenn Mario am Boden ist
     if (wasd.up.isDown && player.body.blocked.down) {
         player.setVelocityY(-520);
+    }
+
+    if (!player.body.blocked.down){
+        player.setFrame(5)
     }
 }
 
