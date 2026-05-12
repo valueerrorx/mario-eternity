@@ -46,16 +46,10 @@ let wasd;
 //runs once - preloads images, soundfiles, maps
 function preload () {   
     this.load.image('clouds','assets/clouds.jpg')
-<<<<<<< HEAD
     // this.load.image('mario','assets/mario.png')
 
     this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth: 50, frameHeight: 67 }       ) 
 
-=======
-    //this.load.image('mario','assets/mario.png')
-
-    this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth: 50, frameHeight: 67 })
->>>>>>> db32327409b2fac63f1df43ae153b909b143a67c
 
 }
 
@@ -68,7 +62,6 @@ function create () {
     
     // Mario mit Physik aktivieren
     player = this.physics.add.sprite(330, 30, 'mario');
-<<<<<<< HEAD
     player.setCircle(28, -2, 8)
     player.setCollideWorldBounds(true);
 
@@ -78,22 +71,6 @@ function create () {
         frameRate: 16,
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
-=======
-    player.setCircle(28)
-    // Mario bleibt innerhalb des sichtbaren Bereichs
-    player.setCollideWorldBounds(true);
-
-
-
-this.anims.create( {
-    key: 'walk',
-    frameRate: 16,
-    frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1] })
-
-
-} )
-
->>>>>>> db32327409b2fac63f1df43ae153b909b143a67c
 
 
 
@@ -118,21 +95,15 @@ function update (){
         player.setVelocityX(-speed);
         player.setFlipX(false);
         player.anims.play('walk', true)
-<<<<<<< HEAD
 
 
-=======
->>>>>>> db32327409b2fac63f1df43ae153b909b143a67c
     // Bewegung nach rechts
     } else if (wasd.right.isDown) {
         player.setVelocityX(speed);
         player.setFlipX(true);
         player.anims.play('walk', true)
-<<<<<<< HEAD
 
 
-=======
->>>>>>> db32327409b2fac63f1df43ae153b909b143a67c
     // Keine Taste: horizontal stoppen
     } else {
         player.setVelocityX(0);
@@ -147,14 +118,11 @@ function update (){
     if (!player.body.blocked.down){
         player.setFrame(5)
     }
-<<<<<<< HEAD
 
 
 
 
 
-=======
->>>>>>> db32327409b2fac63f1df43ae153b909b143a67c
 }
 
 
