@@ -16,7 +16,7 @@
 <script type="text/javascript">
 
 // the phaser.game config object
-var config = {
+let config = {
     type: Phaser.AUTO,  // Which renderer to use
     width: 800,         // Canvas width in pixels
     height: 480,        // Canvas height in pixels
@@ -32,7 +32,10 @@ var config = {
         preload: preload,
         create: create,
         update: update
-    }
+    },
+    map: null,
+    player: null,
+
 };
 
 
@@ -50,18 +53,26 @@ function preload () {
 
     this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth:50, frameHeight:67 })
 
+    this.load.tilemapTiledJSON('map1','assets/levelS.json')    //map resources laden
+    this.load.image('tileset', 'assets/tileset.png')
+
 }
 
 
 // runs once after preload - create world here
 function create () { 
-    // Hintergrundbild über ganze Spielfläche
-    this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
+    
+    
+    createmap('map1', this)
+    
+    
     // Mario mit Physik aktivieren
     player = this.physics.add.sprite(330, 30, 'mario');
     player.setCircle(28,-2,8)
     // Mario bleibt innerhalb des sichtbaren Bereichs
     player.setCollideWorldBounds(true);
+
+    this.cameras.main.startFollow(player)
 
 
     this.anims.create( {
@@ -115,7 +126,21 @@ function update (){
     }
 }
 
+function createmap(mapID, scene){
+    config.map = scene.make.tilemap({key: mapID})
+    
+    let tiles = config.map.addTilesetImage('tileset')
 
+    // Hintergrundbild über ganze Spielfläche
+    scene.add.tileSprite(0, 0, config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0);
+
+    let floorlayer = config.map.createLayer('floor', tiles, 0, 0)
+
+    scene.physics.world.setBounds(0,0, config.map.widthInPixels, config.map.heightInPixels)
+
+    scene.cameras.main.setBounds(0,0,config.map.widthInPixels, config.map.heightInPixels );
+
+}
 
 
 
