@@ -16,7 +16,7 @@
 <script type="text/javascript">
 
 // the phaser.game config object
-var config = {
+let config = {
     type: Phaser.AUTO,  // Which renderer to use
     width: 800,         // Canvas width in pixels
     height: 480,        // Canvas height in pixels
@@ -31,8 +31,12 @@ var config = {
     scene: {        // scene object (also eats array of scenes aka game.states)
         preload: preload,
         create: create,
-        update: update
-    }
+        update: update,
+        createmap:createmap,
+    },
+    map: null,
+    player: null,
+
 };
 
 
@@ -48,6 +52,10 @@ function preload () {
     this.load.image('clouds','assets/clouds.jpg')
     //this.load.image('mario','assets/mario.png')
     this.load.spritesheet('mario','assets/mariospritesheet.png',{ frameWidth:50, frameHeight:67 })
+    //load map resources
+    this.load.tilemapTiledJSON('level_01', 'assets/level_01.json')
+    this.load.image('tileset','assets/tileset.png')
+
 }
 
 
@@ -61,6 +69,8 @@ function create () {
     player.setCollideWorldBounds(true);
     // Mario bleibt innerhalb des sichtbaren Bereichs
     player.setCollideWorldBounds(true);
+
+    this.cameras.main.startFollow(player)
 
 
     this.anims.create({
@@ -114,17 +124,21 @@ function update (){
     if (!player.body.blocked.down){
         player.setFrame (5)
     }
+}
+function createmap(mapID , scene){
+    config.map = scene.make.tilemap( {key: mapID} )
 
+    let tiles = config.map.addTilesetImage('tileset')
+
+    scene.add.tileSprite(0,0,config.map.wifthInPixels,config.map.heightInPixels, 'clouds').setOrigin(0,0);
+
+    let floorlayer = config.map.createDynamicLayer('floor', tiles, 0, 0 )
+
+    scene.physics.world.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
+    scene.cameras.main.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
 
 
 }
-
-
-
-
-
-
-
 
 </script>
   </body>
