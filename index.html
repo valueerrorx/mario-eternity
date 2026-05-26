@@ -86,6 +86,11 @@ function create () {
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
+   
+    this.physics.add.collider(player, config.floorlayer)
+    this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
+    this.physics.add.collider(player, config.enemylayer, playerdie, null, this)
+
 }
 
 
@@ -139,6 +144,16 @@ config.map = scene.make.tilemap( { key: mapID} )
     // Hintergrundbild über ganze Spielfläche
     scene.add.tileSprite(0, 0, config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0).setDepth(0)
 
+     config.floorlayer = config.map.createLayer('floor', tiles, 0, 0) .setCollisionBetween(1, 10000)
+     config.enemylayer = config.map.createLayer('enemylayer', tiles, 0, 0) .setCollisionBetween(1, 10000)
+     config.assetlayer = config.map.createLayer('assetlayer', tiles, 0, 0) .setCollisionBetween(1, 10000) 
+
+
+     config.backgroundlayer = config.map.createLayer('background', tiles, 0, 0) .setDepth(40)
+     config.foregroundlayer = config.map.createLayer('foreground', tiles, 0, 0) .setDepth(60)
+
+     
+
 
 
     let tiles = config.map.addTilesetImage('tileset')
@@ -151,8 +166,18 @@ config.map = scene.make.tilemap( { key: mapID} )
 
 }
 
+function asstTileOverlap(player, tile) {
+    return tile.index
 
+}
+function collect(player, tile) {
+    console.log("you got 1 coin")
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+}
 
+function playerdie(player, tile) {
+    console.log("you died!")
+}
 
 
 
