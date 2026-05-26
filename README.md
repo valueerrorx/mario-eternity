@@ -10,10 +10,8 @@ mv mario-eternity mario-bak
 git checkout meinbranch
 
 
-
 # branch "main" in den derzeit akitven branch mergen (vereinen)
 git merge main
-
 
 
 # neue dateien zum index hinzufügen

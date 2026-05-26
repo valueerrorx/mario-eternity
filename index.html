@@ -16,7 +16,7 @@
 <script type="text/javascript">
 
 // the phaser.game config object
-var config = {
+let config = {
     type: Phaser.AUTO,  // Which renderer to use
     width: 800,         // Canvas width in pixels
     height: 480,        // Canvas height in pixels
@@ -24,7 +24,7 @@ var config = {
     physics: {
         default: 'arcade',       // Which physics engine to use
         arcade: {
-            gravity: { y: 1200 },
+            gravity: { y: 1800 },
             debug: true              // paint debug information (hitboxes)
         }
     },
@@ -32,7 +32,9 @@ var config = {
         preload: preload,
         create: create,
         update: update
-    }
+    },
+    map: null,
+    player: null,
 };
 
 
@@ -47,24 +49,33 @@ let wasd;
 function preload () {   
     this.load.image('clouds','assets/clouds.jpg')
     // this.load.image('mario','assets/mario.png')
+    this.load.image('green','assets/green.png')
+    this.load.image('darkgreen','assets/darkgreen.png')
 
     this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth: 50, frameHeight: 67 }       ) 
 
+    this.load.tilemapTiledJSON('map1', 'assets/levelx.json')    // map resources laden
+    this.load.image('tileset', 'assets/tileset.png')
 
 }
 
 
 // runs once after preload - create world here
 function create () { 
-    // Hintergrundbild über ganze Spielfläche
-    this.add.tileSprite(0, 0, game.config.width, game.config.height, 'clouds').setOrigin(0,0);
-    
-    
+
+    createmap('map1', this)
+
+
+
+
     // Mario mit Physik aktivieren
-    player = this.physics.add.sprite(330, 30, 'mario');
+    player = this.physics.add.sprite(330, 1800, 'mario');
     player.setCircle(28, -2, 8)
     player.setCollideWorldBounds(true);
+    player.speed = 400
+    player.setDepth(50)
 
+    this.cameras.main.startFollow(player)
 
     this.anims.create({
         key: 'walk',
@@ -81,25 +92,36 @@ function create () {
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
+
+    this.physics.add.collider(player, config.floorlayer)
+    this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
+    this.physics.add.collider(player, config.enemylayer, playerdie, null,  this)
+   
+
 }
+
+
+
+
 
 
 // runs 60times per second - everything that needs updates goes here..
 function update (){ 
-    // Laufgeschwindigkeit links/rechts
-    const speed = 220;
-
+    let sx = this.cameras.main.scrollX
+    config.clouds.x = sx
+    config.green.x = sx * 0.4
+    config.darkgreen.x = sx * 0.2
 
     // Bewegung nach links
     if (wasd.left.isDown) {
-        player.setVelocityX(-speed);
+        player.setVelocityX(-player.speed);
         player.setFlipX(false);
         player.anims.play('walk', true)
 
 
     // Bewegung nach rechts
     } else if (wasd.right.isDown) {
-        player.setVelocityX(speed);
+        player.setVelocityX(player.speed);
         player.setFlipX(true);
         player.anims.play('walk', true)
 
@@ -112,21 +134,58 @@ function update (){
 
     // Springen nur, wenn Mario am Boden ist
     if (wasd.up.isDown && player.body.blocked.down) {
-        player.setVelocityY(-520);
+        player.setVelocityY(-700);
     }
 
     if (!player.body.blocked.down){
         player.setFrame(5)
     }
 
+}
 
 
+function createmap(mapID, scene){
+    config.map = scene.make.tilemap( { key: mapID}   )
+
+    let tiles = config.map.addTilesetImage('tileset','tileset')
+
+
+    // Hintergrundbild über ganze Spielfläche
+    config.clouds=scene.add.tileSprite(0, 0,  config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0)
+    config.green=scene.add.tileSprite(0, config.map.heightInPixels-640,  config.map.widthInPixels, config.map.heightInPixels, 'green').setOrigin(0,0)
+    config.darkgreen=scene.add.tileSprite(0, config.map.heightInPixels-480,  config.map.widthInPixels, config.map.heightInPixels, 'darkgreen').setOrigin(0,0)
+
+    config.floorlayer = config.map.createLayer('floor', tiles, 0, 0).setCollisionBetween(1, 10000) 
+    config.enemylayer =  config.map.createLayer('enemylayer', tiles, 0, 0).setCollisionBetween(1, 10000)
+    config.assetlayer =  config.map.createLayer('assetlayer', tiles, 0, 0).setCollisionBetween(1, 10000)
+
+
+    config.backgroundlayer =  config.map.createLayer('background', tiles, 0, 0).setDepth(40)
+    config.foregroundlayer =  config.map.createLayer('foreground', tiles, 0, 0).setDepth(60)
+
+ 
+    scene.physics.world.setBounds(0,0, config.map.widthInPixels, config.map.heightInPixels)
+    scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels)
 
 
 }
 
 
 
+  
+function assetTileOverlap(player, tile) {
+    return tile.index > 0
+}
+
+function collect(player, tile) {
+    console.log("you got 1 coin")
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+}
+
+
+function playerdie(player, tile){
+    console.log("you died!")
+}
 
 
 
