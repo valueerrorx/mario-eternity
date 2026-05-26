@@ -15,20 +15,19 @@
 
 <script type="text/javascript">
 
-// the phaser.game config object
 let config = {
-type: Phaser.AUTO, // Which renderer to use
-width: 800, // Canvas width in pixels
-height: 480, // Canvas height in pixels
-parent:"preview", // ID of the DOM element to add the canvas to
+type: Phaser.AUTO, 
+width: 800, 
+height: 480, 
+parent:"preview", 
 physics: {
-default: 'arcade', // Which physics engine to use
+default: 'arcade', 
 arcade: {
 gravity: { y: 1200 },
-debug: true // paint debug information (hitboxes)
+debug: true 
 }
 },
-scene: { // scene object (also eats array of scenes aka game.states)
+scene: { 
 preload: preload,
 create: create,
 update: update
@@ -38,31 +37,29 @@ player: null,
 };
 
 
-let game = new Phaser.Game(config); //our game instance - using the config object
+let game = new Phaser.Game(config); 
 
-// Spielfigur und Tastatur-Objekte (global, damit update() sie nutzen kann)
 let player;
 let cursors;
 let wasd;
 
-//runs once - preloads images, soundfiles, maps
+
 function preload () {
 this.load.image('clouds','assets/clouds.jpg')
-// this.load.image('mario','assets/mario.png')
+
 
 this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
 
-this.load.tilemapTiledJSON('map1', 'assets/map.json') //map ressources laden
+this.load.tilemapTiledJSON('map1', 'assets/map.json') 
 this.load.image('tileset', 'assets/tileset.png')
 
 
 }
 
 
-// runs once after preload - create world here
+
 function create () {
 
-    // Mario mit Physik aktivieren
     player = this.physics.add.sprite(330, 30, 'mario');
     player.setCircle(28, -2, 8)
     player.setCollideWorldBounds(true);
@@ -79,43 +76,45 @@ function create () {
 
     createmap('map1',this)
 
-    // WASD-Tasten erfassen
+    
     wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.SPACE,
         left: Phaser.Input.Keyboard.KeyCodes.A,
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
+
+
+    this.physics.add.collider(player,config.floor);
+    this.physics.add.collider(player,config.interact, collect, assetTileOverlap, this);
+    this.physics.add.overlap(player,config.enemies, death, null, this);
+
+
 }
 
 
-// runs 60times per second - everything that needs updates goes here..
 function update (){
-    // Laufgeschwindigkeit links/rechts
+
     const speed = 220;
 
 
-    // Bewegung nach links
     if (wasd.left.isDown) {
     player.setVelocityX(-speed);
     player.setFlipX(false);
     player.anims.play('walk', true)
 
 
-    // Bewegung nach rechts
     } else if (wasd.right.isDown) {
     player.setVelocityX(speed);
     player.setFlipX(true);
     player.anims.play('walk', true)
 
 
-    // Keine Taste: horizontal stoppen
     } else {
     player.setVelocityX(0);
     player.setFrame(2)
     }
 
-    // Springen nur, wenn Mario am Boden ist
     if (wasd.up.isDown && player.body.blocked.down) {
     player.setVelocityY(-520);
     }
@@ -128,28 +127,61 @@ function update (){
 
 
 
+
+
+
 }
 
 function createmap(mapID, scene){
 
 
 
-config.map = scene.make.tilemap( { key: mapID} )
+    config.map = scene.make.tilemap( { key: mapID} )
 
-    // Hintergrundbild über ganze Spielfläche
+
+    let tiles = config.map.addTilesetImage('tileset', 'tileset')
+
+
     scene.add.tileSprite(0, 0, config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0).setDepth(0)
 
 
+    config.floor = config.map.createLayer('floor', tiles, 0,0).setCollisionbetween(1,16000);
+    config.enemies = config.map.createLayer('enemies', tiles, 0, 0).setCollisionBetween(1, 16000);
+    config.interact = config.map.createLayer('interact', tiles, 0, 0).setCollisionBetween(1, 16000);
 
-    let tiles = config.map.addTilesetImage('tileset')
+    config.foreground = config.map.createLayer('foreground', tiles, 0, 0).setDepth(1, 51);
+    config.background = config.map.createLayer('background', tiles, 0, 0).setDepth(1, 1);
 
-    let floorlayer = config.map.createLayer('floor', tiles, 0, 0 )
+
 
     scene.physics.world.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels) 
     scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels);
 
 
 }
+
+
+function assetTileoverlap(player,tile){
+
+    return tile.index > 0
+
+}
+
+
+function collect(player,tile){
+
+    console.log("coin");
+    config.interact.removeTileAt(tile.x,tile.y)
+
+}
+
+
+function death(player,tile){
+
+    console.log("death")
+
+}
+
 
 
 
