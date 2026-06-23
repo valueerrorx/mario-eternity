@@ -45,6 +45,11 @@ let player;
 let cursors;
 let wasd;
 let shootKey;
+let timerText;
+let timerSeconds = 300;
+let timerActive = true;
+let timerBlinkTime = 0;
+let timerBlinkState = false;
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -137,7 +142,20 @@ function create () {
     this.physics.add.collider(config.enemies, config.floorlayer)
     this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
    
+    // Timer erstellen
+    timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
+    timerText.setScrollFactor(0)
+    timerText.setDepth(100)
+    timerActive = true;
+    timerBlinkTime = 0;
+    timerBlinkState = false;
+}
 
+function formatTimer(seconds) {
+    let time = Math.max(seconds, 0)
+    let wholeSeconds = Math.floor(time)
+    let ms = Math.floor((time - wholeSeconds) * 1000)
+    return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`
 }
 
 
@@ -145,8 +163,29 @@ function create () {
 
 
 
+
+
 // runs 60times per second - everything that needs updates goes here..
-function update (){ 
+function update (time, delta){ 
+    if (timerActive) {
+        timerSeconds -= delta / 1000
+        if (timerSeconds <= 0) {
+            timerSeconds = 0
+            timerActive = false
+            timerBlinkTime = 0
+            timerBlinkState = false
+            timerText.setFill('#FFFF00')
+        }
+    } else {
+        timerBlinkTime += delta
+        if (timerBlinkTime >= 500) {
+            timerBlinkTime -= 500
+            timerBlinkState = !timerBlinkState
+            timerText.setVisible(timerBlinkState)
+        }
+    }
+    timerText.setText(formatTimer(timerSeconds))
+    
     let sx = this.cameras.main.scrollX
     config.clouds.x = sx
     config.green.x = sx * 0.4
@@ -275,6 +314,7 @@ function bulletHitEnemy(bullet, enemy) {
     enemy.disableBody(true, true);
     console.log("enemy hit!");
 }
+
 
 
 
