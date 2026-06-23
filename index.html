@@ -38,6 +38,11 @@ let config = {
 };
 
 
+let jumpCount = 0;
+
+
+
+
 let game = new Phaser.Game(config);  //our game instance - using the config object
 
 // Spielfigur und Tastatur-Objekte (global, damit update() sie nutzen kann)
@@ -132,12 +137,17 @@ function update (){
         player.setFrame(2)
     }
 
-    // Springen nur, wenn Mario am Boden ist
-    if (wasd.up.isDown && player.body.blocked.down) {
-        player.setVelocityY(-700);
+    // Double-Jump: Reset am Boden und ein zusätzlicher Sprung in der Luft
+    if (player.body.blocked.down) {
+        jumpCount = 0;
     }
 
-    if (!player.body.blocked.down){
+    if (Phaser.Input.Keyboard.JustDown(wasd.up) && jumpCount < 2) {
+        player.setVelocityY(-700);
+        jumpCount++;
+    }
+
+    if (!player.body.blocked.down) {
         player.setFrame(5)
     }
 
