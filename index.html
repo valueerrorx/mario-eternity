@@ -35,6 +35,8 @@ let config = {
     },
     map: null,
     player: null,
+    coins: 0,
+    coinText: null,
 };
 
 
@@ -83,7 +85,16 @@ function create () {
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
 
-
+    config.coinText = this.add.text(config.width - 140, 40, 'Coins: 0', {
+        fontSize: '24px',
+        fontStyle: 1000,
+        fill: '#ffffff',
+        fontFamily: 'Arial',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        padding: { x: 10, y: 5 }
+    })
+    .setScrollFactor(0)
+    .setDepth(100)
 
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
@@ -178,8 +189,12 @@ function assetTileOverlap(player, tile) {
 }
 
 function collect(player, tile) {
-    console.log("you got 1 coin")
+    //console.log("you got 1 coin")
     config.assetlayer.removeTileAt(tile.x, tile.y)
+    config.coins += 1
+    if (config.coinText) {
+        config.coinText.setText('Coins: ' + config.coins)
+    }
 }
 
 
