@@ -44,6 +44,7 @@ let game = new Phaser.Game(config);  //our game instance - using the config obje
 let player;
 let cursors;
 let wasd;
+let shootKey;
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -83,7 +84,34 @@ function create () {
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
 
+    // Bullet texture für die Pistole
+    let bulletGraphic = this.add.graphics();
+    bulletGraphic.fillStyle(0xffff00, 1);
+    bulletGraphic.fillRect(0, 0, 10, 4);
+    bulletGraphic.generateTexture('bullet', 10, 4);
+    bulletGraphic.destroy();
 
+    // Enemy texture für bewegliche Gegner
+    let enemyGraphic = this.add.graphics();
+    enemyGraphic.fillStyle(0xff0000, 1);
+    enemyGraphic.fillRect(0, 0, 28, 28);
+    enemyGraphic.generateTexture('enemy', 28, 28);
+    enemyGraphic.destroy();
+
+    config.bullets = this.physics.add.group({
+        defaultKey: 'bullet',
+        maxSize: 10,
+        classType: Phaser.Physics.Arcade.Image
+    });
+
+    config.enemySpawns = [
+        { x: 900, y: 1800 },
+        { x: 1200, y: 1800 }
+    ];
+    config.lastShot = 0;
+    config.shotCooldown = 250;
+
+    player.facing = 'right';
 
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
@@ -93,9 +121,21 @@ function create () {
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
 
+    shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
     this.physics.add.collider(player, config.floorlayer)
     this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
-    this.physics.add.collider(player, config.enemylayer, playerdie, null,  this)
+
+    config.enemies = this.physics.add.group({
+        classType: Phaser.Physics.Arcade.Sprite,
+        runChildUpdate: true
+    });
+
+    spawnEnemies(this);
+
+    this.physics.add.collider(player, config.enemies, playerdie, null, this)
+    this.physics.add.collider(config.enemies, config.floorlayer)
+    this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
    
 
 }
@@ -116,6 +156,7 @@ function update (){
     if (wasd.left.isDown) {
         player.setVelocityX(-player.speed);
         player.setFlipX(false);
+        player.facing = 'left';
         player.anims.play('walk', true)
 
 
@@ -123,6 +164,7 @@ function update (){
     } else if (wasd.right.isDown) {
         player.setVelocityX(player.speed);
         player.setFlipX(true);
+        player.facing = 'right';
         player.anims.play('walk', true)
 
 
@@ -135,6 +177,11 @@ function update (){
     // Springen nur, wenn Mario am Boden ist
     if (wasd.up.isDown && player.body.blocked.down) {
         player.setVelocityY(-700);
+    }
+
+    if (shootKey.isDown && this.time.now > config.lastShot) {
+        shootBullet(this);
+        config.lastShot = this.time.now + config.shotCooldown;
     }
 
     if (!player.body.blocked.down){
@@ -182,9 +229,51 @@ function collect(player, tile) {
     config.assetlayer.removeTileAt(tile.x, tile.y)
 }
 
-
 function playerdie(player, tile){
     console.log("you died!")
+}
+
+function spawnEnemies(scene) {
+    config.enemySpawns.forEach(spawn => {
+        let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
+        if (!enemy) {
+            return;
+        }
+        enemy.setActive(true);
+        enemy.setVisible(true);
+        enemy.body.setAllowGravity(true);
+        enemy.setCollideWorldBounds(true);
+        enemy.setBounce(1, 0);
+        enemy.speed = 80;
+        enemy.setVelocityX(-enemy.speed);
+    });
+}
+
+function shootBullet(scene) {
+    let offsetX = player.facing === 'left' ? -30 : 30;
+    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
+    if (!bullet) {
+        return;
+    }
+
+    bullet.enableBody(true, player.x + offsetX, player.y - 10, true, true);
+    bullet.body.setAllowGravity(false);
+    bullet.body.setVelocityX(player.facing === 'left' ? -900 : 900);
+    bullet.body.setVelocityY(0);
+    bullet.body.setCollideWorldBounds(true);
+    bullet.body.onWorldBounds = true;
+    bullet.setDepth(60);
+    bullet.setActive(true);
+    bullet.setVisible(true);
+}
+
+function bulletHitEnemy(bullet, enemy) {
+    if (!bullet || !enemy) {
+        return;
+    }
+    bullet.disableBody(true, true);
+    enemy.disableBody(true, true);
+    console.log("enemy hit!");
 }
 
 
