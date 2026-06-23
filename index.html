@@ -49,6 +49,12 @@ let game = new Phaser.Game(config);  //our game instance - using the config obje
 let player;
 let cursors;
 let wasd;
+let shootKey;
+let timerText;
+let timerSeconds = 300;
+let timerActive = true;
+let timerBlinkTime = 0;
+let timerBlinkState = false;
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -88,7 +94,34 @@ function create () {
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
 
+    // Bullet texture für die Pistole
+    let bulletGraphic = this.add.graphics();
+    bulletGraphic.fillStyle(0xffff00, 1);
+    bulletGraphic.fillRect(0, 0, 10, 4);
+    bulletGraphic.generateTexture('bullet', 10, 4);
+    bulletGraphic.destroy();
 
+    // Enemy texture für bewegliche Gegner
+    let enemyGraphic = this.add.graphics();
+    enemyGraphic.fillStyle(0xff0000, 1);
+    enemyGraphic.fillRect(0, 0, 28, 28);
+    enemyGraphic.generateTexture('enemy', 28, 28);
+    enemyGraphic.destroy();
+
+    config.bullets = this.physics.add.group({
+        defaultKey: 'bullet',
+        maxSize: 10,
+        classType: Phaser.Physics.Arcade.Image
+    });
+
+    config.enemySpawns = [
+        { x: 900, y: 1800 },
+        { x: 1200, y: 1800 }
+    ];
+    config.lastShot = 0;
+    config.shotCooldown = 250;
+
+    player.facing = 'right';
 
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
@@ -98,11 +131,36 @@ function create () {
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
 
+    shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
     this.physics.add.collider(player, config.floorlayer)
     this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
-    this.physics.add.collider(player, config.enemylayer, playerdie, null,  this)
-   
 
+    config.enemies = this.physics.add.group({
+        classType: Phaser.Physics.Arcade.Sprite,
+        runChildUpdate: true
+    });
+
+    spawnEnemies(this);
+
+    this.physics.add.collider(player, config.enemies, playerdie, null, this)
+    this.physics.add.collider(config.enemies, config.floorlayer)
+    this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
+   
+    // Timer erstellen
+    timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
+    timerText.setScrollFactor(0)
+    timerText.setDepth(100)
+    timerActive = true;
+    timerBlinkTime = 0;
+    timerBlinkState = false;
+}
+
+function formatTimer(seconds) {
+    let time = Math.max(seconds, 0)
+    let wholeSeconds = Math.floor(time)
+    let ms = Math.floor((time - wholeSeconds) * 1000)
+    return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`
 }
 
 
@@ -110,8 +168,29 @@ function create () {
 
 
 
+
+
 // runs 60times per second - everything that needs updates goes here..
-function update (){ 
+function update (time, delta){ 
+    if (timerActive) {
+        timerSeconds -= delta / 1000
+        if (timerSeconds <= 0) {
+            timerSeconds = 0
+            timerActive = false
+            timerBlinkTime = 0
+            timerBlinkState = false
+            timerText.setFill('#FFFF00')
+        }
+    } else {
+        timerBlinkTime += delta
+        if (timerBlinkTime >= 500) {
+            timerBlinkTime -= 500
+            timerBlinkState = !timerBlinkState
+            timerText.setVisible(timerBlinkState)
+        }
+    }
+    timerText.setText(formatTimer(timerSeconds))
+    
     let sx = this.cameras.main.scrollX
     config.clouds.x = sx
     config.green.x = sx * 0.4
@@ -121,6 +200,7 @@ function update (){
     if (wasd.left.isDown) {
         player.setVelocityX(-player.speed);
         player.setFlipX(false);
+        player.facing = 'left';
         player.anims.play('walk', true)
 
 
@@ -128,6 +208,7 @@ function update (){
     } else if (wasd.right.isDown) {
         player.setVelocityX(player.speed);
         player.setFlipX(true);
+        player.facing = 'right';
         player.anims.play('walk', true)
 
 
@@ -147,7 +228,13 @@ function update (){
         jumpCount++;
     }
 
-    if (!player.body.blocked.down) {
+  
+    if (shootKey.isDown && this.time.now > config.lastShot) {
+        shootBullet(this);
+        config.lastShot = this.time.now + config.shotCooldown;
+    }
+
+    if (!player.body.blocked.down){
         player.setFrame(5)
     }
 
@@ -192,10 +279,53 @@ function collect(player, tile) {
     config.assetlayer.removeTileAt(tile.x, tile.y)
 }
 
-
 function playerdie(player, tile){
     console.log("you died!")
 }
+
+function spawnEnemies(scene) {
+    config.enemySpawns.forEach(spawn => {
+        let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
+        if (!enemy) {
+            return;
+        }
+        enemy.setActive(true);
+        enemy.setVisible(true);
+        enemy.body.setAllowGravity(true);
+        enemy.setCollideWorldBounds(true);
+        enemy.setBounce(1, 0);
+        enemy.speed = 80;
+        enemy.setVelocityX(-enemy.speed);
+    });
+}
+
+function shootBullet(scene) {
+    let offsetX = player.facing === 'left' ? -30 : 30;
+    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
+    if (!bullet) {
+        return;
+    }
+
+    bullet.enableBody(true, player.x + offsetX, player.y - 10, true, true);
+    bullet.body.setAllowGravity(false);
+    bullet.body.setVelocityX(player.facing === 'left' ? -900 : 900);
+    bullet.body.setVelocityY(0);
+    bullet.body.setCollideWorldBounds(true);
+    bullet.body.onWorldBounds = true;
+    bullet.setDepth(60);
+    bullet.setActive(true);
+    bullet.setVisible(true);
+}
+
+function bulletHitEnemy(bullet, enemy) {
+    if (!bullet || !enemy) {
+        return;
+    }
+    bullet.disableBody(true, true);
+    enemy.disableBody(true, true);
+    console.log("enemy hit!");
+}
+
 
 
 
