@@ -15,57 +15,83 @@
 
 <script type="text/javascript">
 
+// the phaser.game config object
 let config = {
-type: Phaser.AUTO, 
-width: 800, 
-height: 480, 
-parent:"preview", 
-physics: {
-default: 'arcade', 
-arcade: {
-gravity: { y: 1200 },
-debug: true 
-}
-},
-scene: { 
-preload: preload,
-create: create,
-update: update
-},
-map: null,
-player: null,
+    type: Phaser.AUTO,  // Which renderer to use
+    width: 800,         // Canvas width in pixels
+    height: 480,        // Canvas height in pixels
+    parent:"preview",   // ID of the DOM element to add the canvas to
+    physics: {
+        default: 'arcade',       // Which physics engine to use
+        arcade: {
+            gravity: { y: 1800 },
+            debug: true              // paint debug information (hitboxes)
+        }
+    },
+    scene: {        // scene object (also eats array of scenes aka game.states)
+        preload: preload,
+        create: create,
+        update: update
+    },
+    map: null,
+    player: null,
+    coins: 0,
+    coinText: null,
 };
 
 
-let game = new Phaser.Game(config); 
+let jumpCount = 0;
+
+
+
+
+let game = new Phaser.Game(config);  //our game instance - using the config object
 
 let player;
 let cursors;
 let wasd;
+let shootKey;
+let timerText;
+let timerSeconds = 300;
+let timerActive = true;
+let timerBlinkTime = 0;
+let timerBlinkState = false;
+
+//runs once - preloads images, soundfiles, maps
+function preload () {   
+    this.load.image('clouds','assets/clouds.jpg')
+    // this.load.image('mario','assets/mario.png')
+    this.load.image('green','assets/green.png')
+    this.load.image('darkgreen','assets/darkgreen.png')
 
 
-function preload () {
-this.load.image('clouds','assets/clouds.jpg')
+    this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
 
-
-this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
-
-this.load.tilemapTiledJSON('map1', 'assets/map.json') 
-this.load.image('tileset', 'assets/tileset.png')
-
+    this.load.tilemapTiledJSON('map1', 'assets/map.json') 
+    
+    
+    
+    this.load.image('tileset', 'assets/tileset.png')
 
 }
 
 
+// runs once after preload - create world here
+function create () { 
 
-function create () {
+    createmap('map1', this)
 
-    player = this.physics.add.sprite(330, 30, 'mario');
+
+
+
+    // Mario mit Physik aktivieren
+    player = this.physics.add.sprite(330, 1800, 'mario');
     player.setCircle(28, -2, 8)
     player.setCollideWorldBounds(true);
+    player.speed = 400
     player.setDepth(50)
 
-    this.cameras.main.startFollow(player) 
+    this.cameras.main.startFollow(player)
 
     this.anims.create({
         key: 'walk',
@@ -73,10 +99,6 @@ function create () {
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
 
-
-    createmap('map1',this)
-
-    
     wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.SPACE,
         left: Phaser.Input.Keyboard.KeyCodes.A,
@@ -84,30 +106,85 @@ function create () {
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
 
+    shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
-    this.physics.add.collider(player,config.floor);
-    this.physics.add.collider(player,config.interact, collect, assetTileOverlap, this);
-    this.physics.add.overlap(player,config.enemies, death, null, this);
+    this.physics.add.collider(player, config.floorlayer)
+    this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
 
+    config.enemies = this.physics.add.group({
+        classType: Phaser.Physics.Arcade.Sprite,
+        runChildUpdate: true
+    });
+    config.bullets = this.physics.add.group();
 
+    spawnEnemies(this);
+
+    this.physics.add.collider(player, config.enemies, playerdie, null, this)
+    this.physics.add.collider(config.enemies, config.floorlayer)
+    this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
+   
+    // Timer erstellen
+    timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
+    timerText.setScrollFactor(0)
+    timerText.setDepth(100)
+    timerActive = true;
+    timerBlinkTime = 0;
+    timerBlinkState = false;
+}
+
+function formatTimer(seconds) {
+    let time = Math.max(seconds, 0)
+    let wholeSeconds = Math.floor(time)
+    let ms = Math.floor((time - wholeSeconds) * 1000)
+    return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`
 }
 
 
-function update (){
-
-    const speed = 220;
 
 
+
+
+
+
+// runs 60times per second - everything that needs updates goes here..
+function update (time, delta){ 
+    if (timerActive) {
+        timerSeconds -= delta / 1000
+        if (timerSeconds <= 0) {
+            timerSeconds = 0
+            timerActive = false
+            timerBlinkTime = 0
+            timerBlinkState = false
+            timerText.setFill('#FFFF00')
+        }
+    } else {
+        timerBlinkTime += delta
+        if (timerBlinkTime >= 500) {
+            timerBlinkTime -= 500
+            timerBlinkState = !timerBlinkState
+            timerText.setVisible(timerBlinkState)
+        }
+    }
+    timerText.setText(formatTimer(timerSeconds))
+    
+    let sx = this.cameras.main.scrollX
+    config.clouds.x = sx
+    config.green.x = sx * 0.4
+    config.darkgreen.x = sx * 0.2
+
+    // Bewegung nach links
     if (wasd.left.isDown) {
-    player.setVelocityX(-speed);
-    player.setFlipX(false);
-    player.anims.play('walk', true)
+        player.setVelocityX(-player.speed);
+        player.setFlipX(false);
+        player.facing = 'left';
+        player.anims.play('walk', true)
 
 
     } else if (wasd.right.isDown) {
-    player.setVelocityX(speed);
-    player.setFlipX(true);
-    player.anims.play('walk', true)
+        player.setVelocityX(player.speed);
+        player.setFlipX(true);
+        player.facing = 'right';
+        player.anims.play('walk', true)
 
 
     } else {
@@ -115,50 +192,58 @@ function update (){
     player.setFrame(2)
     }
 
-    if (wasd.up.isDown && player.body.blocked.down) {
-    player.setVelocityY(-520);
+    // Double-Jump: Reset am Boden und ein zusätzlicher Sprung in der Luft
+    if (player.body.blocked.down) {
+        jumpCount = 0;
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(wasd.up) && jumpCount < 2) {
+        player.setVelocityY(-700);
+        jumpCount++;
+    }
+
+  
+    if (shootKey.isDown && this.time.now > config.lastShot) {
+        shootBullet(this);
+        config.lastShot = this.time.now + config.shotCooldown;
     }
 
     if (!player.body.blocked.down){
     player.setFrame(5)
     }
 
-
-
-
-
-
-
-
 }
+
 
 function createmap(mapID, scene){
+    config.map = scene.make.tilemap( { key: mapID}   )
+
+    let tiles = config.map.addTilesetImage('tileset','tileset')
+
+
+    // Hintergrundbild über ganze Spielfläche
+    config.clouds=scene.add.tileSprite(0, 0,  config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0)
+    config.green=scene.add.tileSprite(0, config.map.heightInPixels-640,  config.map.widthInPixels, config.map.heightInPixels, 'green').setOrigin(0,0)
+    config.darkgreen=scene.add.tileSprite(0, config.map.heightInPixels-480,  config.map.widthInPixels, config.map.heightInPixels, 'darkgreen').setOrigin(0,0)
+
+    config.floorlayer = config.map.createLayer('floor', tiles, 0, 0).setCollisionBetween(1, 10000) 
+    config.enemylayer =  config.map.createLayer('enemylayer', tiles, 0, 0).setCollisionBetween(1, 10000)
+    config.assetlayer =  config.map.createLayer('assetlayer', tiles, 0, 0).setCollisionBetween(1, 10000)
+
+
+    config.backgroundlayer =  config.map.createLayer('background', tiles, 0, 0).setDepth(40)
+    config.foregroundlayer =  config.map.createLayer('foreground', tiles, 0, 0).setDepth(60)
+
+ 
+    scene.physics.world.setBounds(0,0, config.map.widthInPixels, config.map.heightInPixels)
+    scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels)
 
 
 
-    config.map = scene.make.tilemap( { key: mapID} )
-
-
-    let tiles = config.map.addTilesetImage('tileset', 'tileset')
-
-
-    scene.add.tileSprite(0, 0, config.map.widthInPixels, config.map.heightInPixels, 'clouds').setOrigin(0,0).setDepth(0)
-
-
-    config.floor = config.map.createLayer('floor', tiles, 0,0).setCollisionbetween(1,16000);
-    config.enemies = config.map.createLayer('enemies', tiles, 0, 0).setCollisionBetween(1, 16000);
-    config.interact = config.map.createLayer('interact', tiles, 0, 0).setCollisionBetween(1, 16000);
-
-    config.foreground = config.map.createLayer('foreground', tiles, 0, 0).setDepth(1, 51);
-    config.background = config.map.createLayer('background', tiles, 0, 0).setDepth(1, 1);
-
-
-
-    scene.physics.world.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels) 
-    scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels);
 
 
 }
+
 
 
 function assetTileoverlap(player,tile){
@@ -182,6 +267,67 @@ function death(player,tile){
 
 }
 
+
+  
+function assetTileOverlap(player, tile) {
+    return tile.index > 0
+}
+
+function collect(player, tile) {
+    //console.log("you got 1 coin")
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+    config.coins += 1
+    if (config.coinText) {
+        config.coinText.setText('Coins: ' + config.coins)
+    }
+}
+
+function playerdie(player, tile){
+    console.log("you died!")
+}
+
+function spawnEnemies(scene) {
+    (config.enemySpawns || []).forEach(spawn => {
+        let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
+        if (!enemy) {
+            return;
+        }
+        enemy.setActive(true);
+        enemy.setVisible(true);
+        enemy.body.setAllowGravity(true);
+        enemy.setCollideWorldBounds(true);
+        enemy.setBounce(1, 0);
+        enemy.speed = 80;
+        enemy.setVelocityX(-enemy.speed);
+    });
+}
+
+function shootBullet(scene) {
+    let offsetX = player.facing === 'left' ? -30 : 30;
+    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
+    if (!bullet) {
+        return;
+    }
+
+    bullet.enableBody(true, player.x + offsetX, player.y - 10, true, true);
+    bullet.body.setAllowGravity(false);
+    bullet.body.setVelocityX(player.facing === 'left' ? -900 : 900);
+    bullet.body.setVelocityY(0);
+    bullet.body.setCollideWorldBounds(true);
+    bullet.body.onWorldBounds = true;
+    bullet.setDepth(60);
+    bullet.setActive(true);
+    bullet.setVisible(true);
+}
+
+function bulletHitEnemy(bullet, enemy) {
+    if (!bullet || !enemy) {
+        return;
+    }
+    bullet.disableBody(true, true);
+    enemy.disableBody(true, true);
+    console.log("enemy hit!");
+}
 
 
 
