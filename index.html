@@ -1,17 +1,17 @@
 <html>
-  <head>
-    <title>Phaser Einführung</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <link rel=stylesheet href=index.css>
-    <script src="phaser.min.js"></script> 
-  </head>
-  <body>
-    <a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
-    <div id=preview name=preview ></div>
-    <div id=stuff>
-        <div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
-        <div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
-    </div>
+<head>
+<title>Phaser Einführung</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel=stylesheet href=index.css>
+<script src="phaser.min.js"></script>
+</head>
+<body>
+<a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
+<div id=preview name=preview ></div>
+<div id=stuff>
+<div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
+<div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
+</div>
 
 <script type="text/javascript">
 
@@ -47,7 +47,6 @@ let jumpCount = 0;
 
 let game = new Phaser.Game(config);  //our game instance - using the config object
 
-// Spielfigur und Tastatur-Objekte (global, damit update() sie nutzen kann)
 let player;
 let cursors;
 let wasd;
@@ -65,9 +64,13 @@ function preload () {
     this.load.image('green','assets/green.png')
     this.load.image('darkgreen','assets/darkgreen.png')
 
-    this.load.spritesheet('mario', 'assets/mariospritesheet.png', { frameWidth: 50, frameHeight: 67 }       ) 
 
-    this.load.tilemapTiledJSON('map1', 'assets/levelx.json')    // map resources laden
+    this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
+
+    this.load.tilemapTiledJSON('map1', 'assets/map.json') 
+    
+    
+    
     this.load.image('tileset', 'assets/tileset.png')
 
 }
@@ -96,9 +99,6 @@ function create () {
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
     })
 
-
-
-    // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.SPACE,
         left: Phaser.Input.Keyboard.KeyCodes.A,
@@ -115,6 +115,7 @@ function create () {
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
     });
+    config.bullets = this.physics.add.group();
 
     spawnEnemies(this);
 
@@ -179,7 +180,6 @@ function update (time, delta){
         player.anims.play('walk', true)
 
 
-    // Bewegung nach rechts
     } else if (wasd.right.isDown) {
         player.setVelocityX(player.speed);
         player.setFlipX(true);
@@ -187,10 +187,9 @@ function update (time, delta){
         player.anims.play('walk', true)
 
 
-    // Keine Taste: horizontal stoppen
     } else {
-        player.setVelocityX(0);
-        player.setFrame(2)
+    player.setVelocityX(0);
+    player.setFrame(2)
     }
 
     // Double-Jump: Reset am Boden und ein zusätzlicher Sprung in der Luft
@@ -210,7 +209,7 @@ function update (time, delta){
     }
 
     if (!player.body.blocked.down){
-        player.setFrame(5)
+    player.setFrame(5)
     }
 
 }
@@ -240,8 +239,33 @@ function createmap(mapID, scene){
     scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels)
 
 
+
+
+
 }
 
+
+
+function assetTileoverlap(player,tile){
+
+    return tile.index > 0
+
+}
+
+
+function collect(player,tile){
+
+    console.log("coin");
+    config.interact.removeTileAt(tile.x,tile.y)
+
+}
+
+
+function death(player,tile){
+
+    console.log("death")
+
+}
 
 
   
@@ -263,7 +287,7 @@ function playerdie(player, tile){
 }
 
 function spawnEnemies(scene) {
-    config.enemySpawns.forEach(spawn => {
+    (config.enemySpawns || []).forEach(spawn => {
         let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
         if (!enemy) {
             return;
@@ -311,5 +335,5 @@ function bulletHitEnemy(bullet, enemy) {
 
 
 </script>
-  </body>
+</body>
 </html>
