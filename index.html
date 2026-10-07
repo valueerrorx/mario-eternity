@@ -97,6 +97,18 @@ function create () {
     })
 
 
+    this.cameras.main.startFollow(player)
+
+
+    this.anims.create({
+        key: 'walk',
+        frameRate: 16,
+        frames: this.anims.generateFrameNumbers('mario',{frames: [2,3,4,3,2,1,0,1]})
+
+    })
+
+
+
 
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
@@ -305,10 +317,13 @@ function bulletHitEnemy(bullet, enemy) {
     console.log("enemy hit!");
 }
 
+    let floorlayer = config.map.createDynamicLayer('floor', tiles, 0, 0 )
+
+    scene.physics.world.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
+    scene.cameras.main.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
 
 
-
-
+}
 
 </script>
   </body>
