@@ -30,7 +30,7 @@ a {color: #eee; text-decoration:none;}
 
 
 #stuff {
-    width: 800px;
+    width: auto;
     color: white;
     margin-top: 12px;
     display: flex;
@@ -58,8 +58,8 @@ a {color: #eee; text-decoration:none;}
 .last{   margin-bottom:20px !important; }
 
 #preview {    
-    width:800px;
-    height:480px;
+    width: auto;
+    height: auto;
     position: relative;
     margin: 12px auto 0;
     box-shadow: inset 2px 2px 15px #ececec, 2px 2px 20px #000;
