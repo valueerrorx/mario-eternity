@@ -65,12 +65,12 @@ function preload () {
     this.load.image('darkgreen','assets/darkgreen.png')
 
 
+    
     this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
 
-    this.load.tilemapTiledJSON('map1', 'assets/map.json') 
-    
-    
-    
+
+
+    this.load.tilemapTiledJSON('1', 'assets/level_01.json') 
     this.load.image('tileset', 'assets/tileset.png')
 
 }
@@ -79,7 +79,7 @@ function preload () {
 // runs once after preload - create world here
 function create () { 
 
-    createmap('map1', this)
+    createmap('1', this)
 
 
 
