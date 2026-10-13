@@ -112,7 +112,7 @@ function create () {
 
     // WASD-Tasten erfassen
     wasd = this.input.keyboard.addKeys({
-        up: Phaser.Input.Keyboard.KeyCodes.SPACE,
+        up: Phaser.Input.Keyboard.KeyCodes.W,
         left: Phaser.Input.Keyboard.KeyCodes.A,
         down: Phaser.Input.Keyboard.KeyCodes.S,
         right: Phaser.Input.Keyboard.KeyCodes.D
@@ -250,8 +250,7 @@ function createmap(mapID, scene){
  
     scene.physics.world.setBounds(0,0, config.map.widthInPixels, config.map.heightInPixels)
     scene.cameras.main.setBounds(0, 0, config.map.widthInPixels, config.map.heightInPixels)
-
-
+    
 }
 
 
@@ -277,9 +276,9 @@ function playerdie(player, tile){
 function spawnEnemies(scene) {
     config.enemySpawns.forEach(spawn => {
         let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
-        if (!enemy) {
+           if (!enemy) {
             return;
-        }
+           }
         enemy.setActive(true);
         enemy.setVisible(true);
         enemy.body.setAllowGravity(true);
@@ -317,13 +316,12 @@ function bulletHitEnemy(bullet, enemy) {
     console.log("enemy hit!");
 }
 
-    let floorlayer = config.map.createDynamicLayer('floor', tiles, 0, 0 )
+    //let floorLayer = config.map.createDynamicLayer('floor', tiles,0 ,0 );
 
-    scene.physics.world.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
-    scene.cameras.main.setBounds(0,0,config.map.wifthInPixels,config.map.heightInPixels)
+    
 
 
-}
+
 
 </script>
   </body>
