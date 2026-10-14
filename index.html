@@ -34,7 +34,25 @@
 <div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
 </div>
 
+<script src="menuScene.js"></script>
 <script type="text/javascript">
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super('GameScene');
+    }
+
+    preload() {
+        preload.call(this);
+    }
+
+    create(data) {
+        create.call(this, data);
+    }
+
+    update(time, delta) {
+        update.call(this, time, delta);
+    }
+}
 
 // the phaser.game config object
 let config = {
@@ -49,11 +67,7 @@ let config = {
             debug: true              // paint debug information (hitboxes)
         }
     },
-    scene: {        // scene object (also eats array of scenes aka game.states)
-        preload: preload,
-        create: create,
-        update: update
-    },
+    scene: [MenuScene, GameScene],
     map: null,
     player: null,
     coins: 0,
