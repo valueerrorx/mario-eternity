@@ -7,13 +7,52 @@
 </head>
 <body>
 <a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
-<div id=preview name=preview ></div>
+<div id=preview name=preview >
+<div id="game-settings">
+<button id="settings-toggle" class="settings-toggle" type="button" aria-label="Einstellungen öffnen" aria-controls="settings-panel" aria-expanded="false" title="Einstellungen">&#9881;</button>
+<section id="settings-panel" class="settings-panel" aria-label="Spieleinstellungen" hidden>
+    <h2>Einstellungen</h2>
+    <fieldset class="time-setting">
+        <legend>Tageszeit</legend>
+        <div class="time-options" role="group" aria-label="Tageszeit auswählen">
+            <button type="button" data-time-mode="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-time-mode="day" aria-pressed="false">Tag</button>
+            <button type="button" data-time-mode="night" aria-pressed="false">Nacht</button>
+        </div>
+    </fieldset>
+    <label class="timer-setting" for="timer-toggle">
+        <span>Timer aktiv</span>
+        <input id="timer-toggle" type="checkbox" checked>
+        <span class="switch-track" aria-hidden="true"></span>
+    </label>
+    <button id="restart-game" class="restart-button" type="button"><span aria-hidden="true">&#8635;</span> Neu starten</button>
+</section>
+</div>
+</div>
 <div id=stuff>
 <div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
 <div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
 </div>
 
+<script src="menuScene.js"></script>
 <script type="text/javascript">
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super('GameScene');
+    }
+
+    preload() {
+        preload.call(this);
+    }
+
+    create(data) {
+        create.call(this, data);
+    }
+
+    update(time, delta) {
+        update.call(this, time, delta);
+    }
+}
 
 // the phaser.game config object
 let config = {
@@ -28,15 +67,18 @@ let config = {
             debug: true              // paint debug information (hitboxes)
         }
     },
-    scene: {        // scene object (also eats array of scenes aka game.states)
-        preload: preload,
-        create: create,
-        update: update
-    },
+    scene: [MenuScene, GameScene],
     map: null,
     player: null,
     coins: 0,
     coinText: null,
+    enemySpawns: [
+        { x: 700 },
+        { x: 1450 }
+    ],
+    shells: null,
+    shotCooldown: 200,
+    lastShot: 0,
     lives: 1,
     maxLives: 2,
     hearts: [],
@@ -47,19 +89,22 @@ let config = {
 let jumpCount = 0;
 
 
-
-
 let game = new Phaser.Game(config);  //our game instance - using the config object
 
 let player;
 let cursors;
 let wasd;
 let shootKey;
+let fireStatusText;
 let timerText;
 let timerSeconds = 300;
 let timerActive = true;
 let timerBlinkTime = 0;
 let timerBlinkState = false;
+let timerEnabled = true;
+let timeMode = 'auto';
+
+setupSettingsControls();
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -72,6 +117,8 @@ function preload () {
 
     
     this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
+    this.load.spritesheet('powerups', 'assets/powerups.png', { frameWidth: 64, frameHeight: 64 })
+    this.load.image('fireball', 'assets/fireball-small.png')
 
 
 
@@ -84,9 +131,17 @@ function preload () {
 // runs once after preload - create world here
 function create () { 
 
+    config.lives = 1;
+    config.coins = 0;
+    config.lastShot = 0;
+    jumpCount = 0;
+    timerSeconds = 300;
+    timerActive = true;
+    timerBlinkTime = 0;
+    timerBlinkState = false;
+
     createmap('1', this)
-
-
+    createKoopaTextures(this)
 
 
     // Mario mit Physik aktivieren
@@ -108,6 +163,24 @@ function create () {
     config.heartPickup.body.setAllowGravity(false);
     config.heartPickup.body.setImmovable(true);
     this.physics.add.overlap(player, config.heartPickup, collectHeart, null, this);
+    player.hasFireFlower = false
+
+    config.fireFlower = this.physics.add.sprite(352, 1512, 'powerups', 2)
+    config.fireFlower.setScale(0.75)
+    config.fireFlower.setDepth(61)
+    config.fireFlower.body.setAllowGravity(false)
+    config.fireFlower.body.setImmovable(true)
+    this.tweens.add({
+        targets: config.fireFlower,
+        y: config.fireFlower.y - 8,
+        duration: 650,
+        yoyo: true,
+        repeat: -1
+    })
+
+    fireStatusText = this.add.text(16, 56, 'Feuerblume: fehlt', { fontSize: '18px', fill: '#ffffff' })
+    fireStatusText.setScrollFactor(0)
+    fireStatusText.setDepth(100)
 
     this.cameras.main.startFollow(player)
 
@@ -128,12 +201,22 @@ function create () {
 
     this.physics.add.collider(player, config.floorlayer)
     this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
+    this.physics.add.overlap(player, config.fireFlower, collectFireFlower, null, this)
 
     config.enemies = this.physics.add.group({
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
     });
     config.bullets = this.physics.add.group();
+    config.shells = this.physics.add.group({
+        classType: Phaser.Physics.Arcade.Sprite,
+        runChildUpdate: true
+    });
+    this.physics.world.on('worldbounds', body => {
+        if (body.gameObject.texture.key === 'fireball') {
+            body.gameObject.disableBody(true, true)
+        }
+    })
 
     spawnEnemies(this);
 
@@ -144,13 +227,23 @@ function create () {
     bonusEnemy.body.setImmovable(true);
     bonusEnemy.body.setVelocityX(-80);
     bonusEnemy.setDepth(60);
-    this.physics.add.collider(bonusEnemy, config.floorlayer);
-    this.physics.add.collider(player, config.enemies, handlePlayerHit, null, this)
+
+    this.physics.add.collider(player, config.enemies, handlePlayerEnemyCollision, null, this)
+    this.physics.add.collider(player, config.shells, handlePlayerShellCollision, null, this)
     this.physics.add.collider(config.enemies, config.floorlayer)
+    this.physics.add.collider(config.shells, config.floorlayer)
+    this.physics.add.collider(config.shells, config.enemies, shellHitsEnemy, null, this)
     this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
 
     createLifeHud.call(this)
    
+    config.coinText = this.add.text(16, 56, 'Coins: ' + config.coins, {
+        fontSize: '24px',
+        fill: '#ffffff'
+    });
+    config.coinText.setScrollFactor(0);
+    config.coinText.setDepth(100);
+
     // Timer erstellen
     timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
     timerText.setScrollFactor(0)
@@ -172,6 +265,43 @@ function formatTimer(seconds) {
     let wholeSeconds = Math.floor(time)
     let ms = Math.floor((time - wholeSeconds) * 1000)
     return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`
+}
+
+function setupSettingsControls() {
+    let settingsToggle = document.getElementById('settings-toggle');
+    let settingsPanel = document.getElementById('settings-panel');
+
+    settingsToggle.addEventListener('click', () => {
+        settingsPanel.hidden = !settingsPanel.hidden;
+        settingsToggle.setAttribute('aria-expanded', String(!settingsPanel.hidden));
+        settingsToggle.setAttribute('aria-label', settingsPanel.hidden ? 'Einstellungen öffnen' : 'Einstellungen schließen');
+    });
+
+    document.querySelectorAll('[data-time-mode]').forEach(button => {
+        button.addEventListener('click', () => {
+            timeMode = button.dataset.timeMode;
+            document.querySelectorAll('[data-time-mode]').forEach(option => {
+                option.setAttribute('aria-pressed', String(option === button));
+            });
+        });
+    });
+
+    document.getElementById('timer-toggle').addEventListener('change', event => {
+        timerEnabled = event.target.checked;
+        if (timerText) {
+            timerText.setVisible(timerEnabled);
+        }
+    });
+
+    document.getElementById('restart-game').addEventListener('click', () => window.location.reload());
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !settingsPanel.hidden) {
+            settingsPanel.hidden = true;
+            settingsToggle.setAttribute('aria-expanded', 'false');
+            settingsToggle.setAttribute('aria-label', 'Einstellungen öffnen');
+            settingsToggle.focus();
+        }
+    });
 }
 
 
@@ -202,20 +332,17 @@ function update (time, delta){
             timerBlinkState = false
             timerText.setFill('#FFFF00')
         }
+        timerText.setText(formatTimer(timerSeconds))
     } else {
-        timerBlinkTime += delta
-        if (timerBlinkTime >= 500) {
-            timerBlinkTime -= 500
-            timerBlinkState = !timerBlinkState
-            timerText.setVisible(timerBlinkState)
-        }
+        timerText.setVisible(false)
     }
-    timerText.setText(formatTimer(timerSeconds))
     
     let sx = this.cameras.main.scrollX
     config.clouds.x = sx
     config.green.x = sx * 0.4
     config.darkgreen.x = sx * 0.2
+
+    updateKoopaEnemies();
 
     // Bewegung nach links
     if (wasd.left.isDown) {
@@ -248,7 +375,7 @@ function update (time, delta){
     }
 
   
-    if (shootKey.isDown && this.time.now > config.lastShot) {
+    if (player.hasFireFlower && shootKey.isDown && this.time.now > config.lastShot) {
         shootBullet(this);
         config.lastShot = this.time.now + config.shotCooldown;
     }
@@ -275,6 +402,8 @@ function createmap(mapID, scene){
     config.green=scene.add.tileSprite(0, config.map.heightInPixels-640,  config.map.widthInPixels, config.map.heightInPixels, 'green').setOrigin(0,0)
     config.darkgreen=scene.add.tileSprite(0, config.map.heightInPixels-480,  config.map.widthInPixels, config.map.heightInPixels, 'darkgreen').setOrigin(0,0)
 
+    createSkyEffects(scene, config.map.widthInPixels, config.map.heightInPixels)
+
     config.floorlayer = config.map.createLayer('floor', tiles, 0, 0).setCollisionBetween(1, 10000) 
     config.enemylayer =  config.map.createLayer('enemylayer', tiles, 0, 0).setCollisionBetween(1, 10000)
     config.assetlayer =  config.map.createLayer('assetlayer', tiles, 0, 0).setCollisionBetween(1, 10000)
@@ -293,6 +422,64 @@ function createmap(mapID, scene){
 
 }
 
+function createSkyEffects(scene, worldWidth, worldHeight) {
+    config.dayNight = { elapsed: 0, duration: 120000, night: 0 };
+    config.nightTint = scene.add.rectangle(0, 0, worldWidth, worldHeight, 0x101b3b, 1)
+        .setOrigin(0, 0)
+        .setAlpha(0);
+    config.nightTint.setDepth(0);
+
+    config.nightClouds = scene.add.graphics();
+    config.nightClouds.setDepth(0);
+    for (let x = 100; x < worldWidth; x += 520) {
+        let y = 180 + ((x * 13) % (worldHeight - 900));
+        let cloudWidth = 210 + ((x * 7) % 120);
+        config.nightClouds.fillStyle(0x11172e, 0.96);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.5, y + 26, cloudWidth, 58);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.3, y + 13, cloudWidth * 0.42, 48);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.58, y + 3, cloudWidth * 0.48, 62);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.8, y + 17, cloudWidth * 0.38, 46);
+        config.nightClouds.fillStyle(0x202744, 0.92);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.49, y + 30, cloudWidth * 0.88, 37);
+    }
+
+    config.starField = scene.add.graphics();
+    config.starField.setDepth(0);
+    let seed = 73421;
+    for (let index = 0; index < 210; index++) {
+        seed = (seed * 16807) % 2147483647;
+        let x = (seed / 2147483647) * worldWidth;
+        seed = (seed * 16807) % 2147483647;
+        let y = 60 + (seed / 2147483647) * (worldHeight - 900);
+        let radius = index % 9 === 0 ? 2.4 : 1 + (index % 3) * 0.35;
+        config.starField.fillStyle(0xffd95e, 0.22);
+        config.starField.fillCircle(x, y, radius * 3.4);
+        config.starField.fillStyle(index % 7 === 0 ? 0xfff1a6 : 0xffd95e, 0.96);
+        config.starField.fillCircle(x, y, radius);
+        if (index % 9 === 0) {
+            config.starField.lineStyle(1.5, 0xffe990, 0.92);
+            config.starField.lineBetween(x - 7, y, x + 7, y);
+            config.starField.lineBetween(x, y - 7, x, y + 7);
+        }
+    }
+
+}
+
+function updateDayNight(scene, delta) {
+    if (!config.dayNight) {
+        return;
+    }
+
+    config.dayNight.elapsed = (config.dayNight.elapsed + delta) % config.dayNight.duration;
+    let phase = config.dayNight.elapsed / config.dayNight.duration;
+    let night = timeMode === 'night' ? 1 : timeMode === 'day' ? 0 : (1 - Math.cos(phase * Math.PI * 2)) / 2;
+    config.dayNight.night = night;
+
+    config.nightTint.setAlpha(night * 0.48);
+    config.nightClouds.setAlpha(night * 0.92);
+    config.starField.setAlpha(night * (0.78 + Math.sin(scene.time.now * 0.003) * 0.16));
+}
+
 
 
 function assetTileoverlap(player,tile){
@@ -305,7 +492,11 @@ function assetTileoverlap(player,tile){
 function collect(player,tile){
 
     console.log("coin");
-    config.interact.removeTileAt(tile.x,tile.y)
+    config.coins += 1
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+    if (config.coinText) {
+        config.coinText.setText('Coins: ' + config.coins)
+    }
 
 }
 
@@ -315,7 +506,6 @@ function death(player,tile){
     console.log("death")
 
 }
-
 
   
 function assetTileOverlap(player, tile) {
@@ -421,11 +611,6 @@ function handlePlayerHit(playerSprite, enemy) {
 
     config.lives = Math.max(0, config.lives - 1);
     updateLifeHud();
-    playerSprite.invulnerable = true;
-    playerSprite.setTint(0xffb3b3);
-    playerSprite.setVelocityY(-320);
-    playerSprite.setVelocityX(playerSprite.x < enemy.x ? -220 : 220);
-    playerSprite.setPosition(config.playerSpawn.x, config.playerSpawn.y);
 
     if (config.lives <= 0) {
         playerSprite.disableBody(true, true);
@@ -435,31 +620,292 @@ function handlePlayerHit(playerSprite, enemy) {
         return;
     }
 
+    playerSprite.invulnerable = true;
+    playerSprite.setTint(0xffb3b3);
+    playerSprite.setVelocity(0, 0);
+    playerSprite.setPosition(config.playerSpawn.x, config.playerSpawn.y);
+
     this.time.delayedCall(1000, () => {
         playerSprite.clearTint();
         playerSprite.invulnerable = false;
     }, [], this);
 }
 
+function createKoopaTextures(scene) {
+    if (scene.textures.exists('koopa')) {
+        return;
+    }
+
+    const gfx = scene.make.graphics({ x: 0, y: 0, add: false });
+
+    gfx.fillStyle(0x5abf4b, 1);
+    gfx.fillRoundedRect(0, 0, 42, 36, 8);
+    gfx.fillStyle(0x8fe07d, 1);
+    gfx.fillRoundedRect(7, 7, 28, 18, 6);
+    gfx.fillStyle(0x2f6d2a, 1);
+    gfx.fillRoundedRect(8, 20, 26, 10, 4);
+    gfx.fillStyle(0x2d1b12, 1);
+    gfx.fillCircle(12, 12, 3);
+    gfx.fillCircle(30, 12, 3);
+    gfx.generateTexture('koopa', 42, 36);
+
+    gfx.clear();
+    gfx.fillStyle(0x3f9730, 1);
+    gfx.fillRoundedRect(0, 0, 30, 22, 7);
+    gfx.fillStyle(0x285c2c, 1);
+    gfx.fillRoundedRect(7, 5, 16, 10, 4);
+    gfx.fillStyle(0x1f1a18, 1);
+    gfx.fillCircle(9, 9, 2);
+    gfx.fillCircle(21, 9, 2);
+    gfx.generateTexture('koopa_shell', 30, 22);
+
+    gfx.clear();
+    gfx.fillStyle(0x5abf4b, 1);
+    gfx.fillRoundedRect(0, 0, 42, 36, 8);
+    gfx.fillStyle(0x8fe07d, 1);
+    gfx.fillRoundedRect(7, 7, 28, 18, 6);
+    gfx.fillStyle(0x2d1b12, 1);
+    gfx.fillCircle(12, 12, 3);
+    gfx.fillCircle(30, 12, 3);
+    gfx.generateTexture('koopa_naked', 42, 36);
+
+    gfx.destroy();
+}
+
+function createDetachedShell(enemy) {
+    if (!config.shells) {
+        return null;
+    }
+
+    const shell = config.shells.create(enemy.x + 18, enemy.y + 4, 'koopa_shell');
+    if (!shell) {
+        return null;
+    }
+
+    shell.isKoopaShell = true;
+    shell.owner = enemy;
+    shell.isLaunched = false;
+    shell.setActive(true);
+    shell.setVisible(true);
+    shell.setDepth(48);
+    shell.setVelocity(0, 0);
+    shell.body.setAllowGravity(false);
+    shell.body.setSize(30, 22);
+    shell.body.setOffset(0, 0);
+    shell.direction = enemy.direction || -1;
+    shell.setFlipX(shell.direction > 0);
+    return shell;
+}
+
+function updateKoopaShells() {
+    if (!config.shells) {
+        return;
+    }
+
+    config.shells.getChildren().forEach(shell => {
+        if (!shell || !shell.active || !shell.isKoopaShell) {
+            return;
+        }
+
+        shell.body.setAllowGravity(false);
+        shell.body.setVelocityY(0);
+
+        if (Math.abs(shell.body.velocity.x) <= 10) {
+            return;
+        }
+
+        const dir = shell.body.velocity.x >= 0 ? 1 : -1;
+        shell.direction = dir;
+        shell.setFlipX(dir > 0);
+
+        const frontX = shell.x + (dir * 18);
+        const frontTile = config.floorlayer && config.floorlayer.getTileAtWorldXY(frontX, shell.y + 10);
+
+        if (!frontTile || frontTile.index <= 0) {
+            shell.direction *= -1;
+            shell.setVelocityX(shell.direction * 420);
+            return;
+        }
+
+        if (shell.body.blocked.left || shell.body.blocked.right) {
+            shell.direction *= -1;
+            shell.setVelocityX(shell.direction * 420);
+        }
+    });
+}
+
+function updateKoopaEnemies() {
+    if (!config.enemies) {
+        return;
+    }
+
+    config.enemies.getChildren().forEach(enemy => {
+        if (!enemy || !enemy.active || !enemy.isKoopa) {
+            return;
+        }
+
+        enemy.body.setAllowGravity(false);
+        enemy.setY(enemy.platformY - 18);
+
+        if (enemy.shellState === 'walking' || enemy.shellState === 'shellless') {
+            const isShellless = enemy.shellState === 'shellless';
+            const speed = isShellless ? 120 : enemy.speed;
+            enemy.setTexture(isShellless ? 'koopa_naked' : 'koopa');
+            enemy.setFlipX(enemy.direction > 0);
+
+            const probeX = enemy.x + (enemy.direction * 22);
+            const groundTile = config.floorlayer && config.floorlayer.getTileAtWorldXY(probeX, enemy.platformY + 1);
+            if (!groundTile || groundTile.index <= 0 || groundTile.pixelY !== enemy.platformY) {
+                enemy.direction *= -1;
+            }
+            enemy.setVelocityX(enemy.direction * speed);
+        }
+    });
+
+    updateKoopaShells();
+}
+
+function handlePlayerShellCollision(player, shell) {
+    if (!shell || !shell.active || !shell.isKoopaShell) {
+        return;
+    }
+
+    const pushDir = player.x < shell.x ? 1 : -1;
+    shell.direction = pushDir;
+    shell.isLaunched = true;
+    shell.owner = null;
+    shell.setVelocityX(pushDir * 420);
+    shell.setFlipX(pushDir > 0);
+}
+
+function handlePlayerEnemyCollision(player, enemy) {
+    if (!enemy || !enemy.active || !enemy.isKoopa) {
+        handlePlayerHit.call(this, player, enemy);
+        return;
+    }
+
+    const playerAboveEnemy = player.body.velocity.y > 100 && player.body.bottom <= enemy.body.top + 20;
+
+    if (playerAboveEnemy) {
+        if (enemy.shellState === 'walking') {
+            enemy.shellState = 'shellless';
+            enemy.direction = player.x < enemy.x ? -1 : 1;
+            enemy.setVelocityX(0);
+            enemy.body.setSize(30, 30);
+            enemy.body.setOffset(6, 6);
+            enemy.shellSprite = createDetachedShell(enemy);
+            player.setVelocityY(-630);
+            return;
+        }
+
+        if (enemy.shellState === 'shellless') {
+            enemy.disableBody(true, true);
+            if (enemy.shellSprite) {
+                enemy.shellSprite.destroy();
+                enemy.shellSprite = null;
+            }
+            player.setVelocityY(-630);
+            return;
+        }
+    }
+
+    handlePlayerHit.call(this, player, enemy);
+}
+
+function shellHitsEnemy(shell, enemy) {
+    if (!shell || !enemy || !enemy.active || !enemy.isKoopa) {
+        return;
+    }
+
+    if (enemy.shellState !== 'shellless') {
+        return;
+    }
+
+    if (shell.owner === enemy) {
+        return;
+    }
+
+    shell.disableBody(true, true);
+    enemy.disableBody(true, true);
+    if (enemy.shellSprite) {
+        enemy.shellSprite.destroy();
+        enemy.shellSprite = null;
+    }
+}
+
+function findGroundYAtX(x) {
+    if (!config.floorlayer || !config.map) {
+        return 1680;
+    }
+
+    for (let y = 0; y < config.map.heightInPixels; y += config.map.tileHeight) {
+        const tile = config.floorlayer.getTileAtWorldXY(x, y + 1);
+        if (tile && tile.index > 0) {
+            return tile.pixelY - 18;
+        }
+    }
+
+    return 1680;
+}
+
+function playerdie(player, tile){
+    if (player.isDying) {
+        return
+    }
+
+    console.log("you died!")
+    player.isDying = true
+    player.hasFireFlower = false
+    fireStatusText.setText('Feuerblume: fehlt')
+    player.setTint(0xff6666)
+    player.body.enable = false
+
+    this.time.delayedCall(700, () => {
+        player.setPosition(330, 1800)
+        player.setVelocity(0, 0)
+        player.clearTint()
+        player.body.enable = true
+        player.isDying = false
+    })
+}
+
+function collectFireFlower(player, fireFlower) {
+    player.hasFireFlower = true
+    fireFlower.disableBody(true, true)
+    fireStatusText.setText('Feuerblume: E zum Schießen')
+}
+
 function spawnEnemies(scene) {
+    createKoopaTextures(scene);
     (config.enemySpawns || []).forEach(spawn => {
-        let enemy = config.enemies.create(spawn.x, spawn.y, 'enemy');
+        const groundY = findGroundYAtX(spawn.x);
+        let enemy = config.enemies.create(spawn.x, groundY, 'koopa');
         if (!enemy) {
             return;
         }
+
+        enemy.isKoopa = true;
+        enemy.shellState = 'walking';
+        enemy.shellSprite = null;
+        enemy.platformY = groundY + 18;
+        enemy.speed = 80;
+        enemy.direction = -1;
         enemy.setActive(true);
         enemy.setVisible(true);
-        enemy.body.setAllowGravity(true);
-        enemy.setCollideWorldBounds(true);
-        enemy.setBounce(1, 0);
-        enemy.speed = 80;
+        enemy.setDepth(45);
+        enemy.body.setAllowGravity(false);
+        enemy.setCollideWorldBounds(false);
+        enemy.setBounce(0, 0);
+        enemy.body.setSize(30, 30);
+        enemy.body.setOffset(6, 6);
         enemy.setVelocityX(-enemy.speed);
+        enemy.setVelocityY(0);
     });
 }
 
 function shootBullet(scene) {
     let offsetX = player.facing === 'left' ? -30 : 30;
-    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
+    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'fireball');
     if (!bullet) {
         return;
     }
