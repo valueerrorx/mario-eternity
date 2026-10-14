@@ -43,7 +43,7 @@ let config = {
     ],
     shells: null,
     shotCooldown: 200,
-    lastShot: 0
+    lastShot: 0,
     lives: 1,
     maxLives: 2,
     hearts: [],
@@ -90,6 +90,15 @@ function preload () {
 
 // runs once after preload - create world here
 function create () { 
+
+    config.lives = 1;
+    config.coins = 0;
+    config.lastShot = 0;
+    jumpCount = 0;
+    timerSeconds = 300;
+    timerActive = true;
+    timerBlinkTime = 0;
+    timerBlinkState = false;
 
     createmap('1', this)
     createKoopaTextures(this)
@@ -146,7 +155,16 @@ function create () {
 
     spawnEnemies(this);
 
-    this.physics.add.collider(player, config.enemies, playerdie, null, this)
+    const bonusEnemy = this.add.rectangle(600, 420, 28, 28, 0xff4d4d);
+    this.physics.add.existing(bonusEnemy);
+    config.enemies.add(bonusEnemy);
+    bonusEnemy.body.setAllowGravity(false);
+    bonusEnemy.body.setImmovable(true);
+    bonusEnemy.body.setVelocityX(-80);
+    bonusEnemy.setDepth(60);
+
+    this.physics.add.collider(player, config.enemies, handlePlayerEnemyCollision, null, this)
+    this.physics.add.collider(player, config.shells, handlePlayerShellCollision, null, this)
     this.physics.add.collider(config.enemies, config.floorlayer)
     this.physics.add.collider(config.shells, config.floorlayer)
     this.physics.add.collider(config.shells, config.enemies, shellHitsEnemy, null, this)
@@ -356,25 +374,21 @@ function handlePlayerHit(playerSprite, enemy) {
 
     config.lives = Math.max(0, config.lives - 1);
     updateLifeHud();
-    playerSprite.invulnerable = true;
-    playerSprite.setTint(0xffb3b3);
-    playerSprite.setVelocityY(-320);
-    playerSprite.setVelocityX(playerSprite.x < enemy.x ? -220 : 220);
-    playerSprite.setPosition(config.playerSpawn.x, config.playerSpawn.y);
 
     if (config.lives <= 0) {
-        playerSprite.disableBody(true, true);
+        this.scene.restart();
         return;
     }
+
+    playerSprite.invulnerable = true;
+    playerSprite.setTint(0xffb3b3);
+    playerSprite.setVelocity(0, 0);
+    playerSprite.setPosition(config.playerSpawn.x, config.playerSpawn.y);
 
     this.time.delayedCall(1000, () => {
         playerSprite.clearTint();
         playerSprite.invulnerable = false;
     }, [], this);
-    if (player && player.scene) {
-        player.setPosition(330, 1700)
-        player.setVelocity(0, 0)
-    }
 }
 
 function createKoopaTextures(scene) {
@@ -526,7 +540,7 @@ function handlePlayerShellCollision(player, shell) {
 
 function handlePlayerEnemyCollision(player, enemy) {
     if (!enemy || !enemy.active || !enemy.isKoopa) {
-        playerdie(player, enemy);
+        handlePlayerHit.call(this, player, enemy);
         return;
     }
 
@@ -555,7 +569,7 @@ function handlePlayerEnemyCollision(player, enemy) {
         }
     }
 
-    playerdie(player, enemy);
+    handlePlayerHit.call(this, player, enemy);
 }
 
 function shellHitsEnemy(shell, enemy) {
