@@ -7,7 +7,28 @@
 </head>
 <body>
 <a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
-<div id=preview name=preview ></div>
+<div id=preview name=preview >
+<div id="game-settings">
+<button id="settings-toggle" class="settings-toggle" type="button" aria-label="Einstellungen öffnen" aria-controls="settings-panel" aria-expanded="false" title="Einstellungen">&#9881;</button>
+<section id="settings-panel" class="settings-panel" aria-label="Spieleinstellungen" hidden>
+    <h2>Einstellungen</h2>
+    <fieldset class="time-setting">
+        <legend>Tageszeit</legend>
+        <div class="time-options" role="group" aria-label="Tageszeit auswählen">
+            <button type="button" data-time-mode="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-time-mode="day" aria-pressed="false">Tag</button>
+            <button type="button" data-time-mode="night" aria-pressed="false">Nacht</button>
+        </div>
+    </fieldset>
+    <label class="timer-setting" for="timer-toggle">
+        <span>Timer aktiv</span>
+        <input id="timer-toggle" type="checkbox" checked>
+        <span class="switch-track" aria-hidden="true"></span>
+    </label>
+    <button id="restart-game" class="restart-button" type="button"><span aria-hidden="true">&#8635;</span> Neu starten</button>
+</section>
+</div>
+</div>
 <div id=stuff>
 <div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
 <div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
@@ -56,6 +77,10 @@ let timerSeconds = 300;
 let timerActive = true;
 let timerBlinkTime = 0;
 let timerBlinkState = false;
+let timerEnabled = true;
+let timeMode = 'auto';
+
+setupSettingsControls();
 
 //runs once - preloads images, soundfiles, maps
 function preload () {   
@@ -139,6 +164,43 @@ function formatTimer(seconds) {
     return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`
 }
 
+function setupSettingsControls() {
+    let settingsToggle = document.getElementById('settings-toggle');
+    let settingsPanel = document.getElementById('settings-panel');
+
+    settingsToggle.addEventListener('click', () => {
+        settingsPanel.hidden = !settingsPanel.hidden;
+        settingsToggle.setAttribute('aria-expanded', String(!settingsPanel.hidden));
+        settingsToggle.setAttribute('aria-label', settingsPanel.hidden ? 'Einstellungen öffnen' : 'Einstellungen schließen');
+    });
+
+    document.querySelectorAll('[data-time-mode]').forEach(button => {
+        button.addEventListener('click', () => {
+            timeMode = button.dataset.timeMode;
+            document.querySelectorAll('[data-time-mode]').forEach(option => {
+                option.setAttribute('aria-pressed', String(option === button));
+            });
+        });
+    });
+
+    document.getElementById('timer-toggle').addEventListener('change', event => {
+        timerEnabled = event.target.checked;
+        if (timerText) {
+            timerText.setVisible(timerEnabled);
+        }
+    });
+
+    document.getElementById('restart-game').addEventListener('click', () => window.location.reload());
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !settingsPanel.hidden) {
+            settingsPanel.hidden = true;
+            settingsToggle.setAttribute('aria-expanded', 'false');
+            settingsToggle.setAttribute('aria-label', 'Einstellungen öffnen');
+            settingsToggle.focus();
+        }
+    });
+}
+
 
 
 
@@ -148,24 +210,30 @@ function formatTimer(seconds) {
 
 // runs 60times per second - everything that needs updates goes here..
 function update (time, delta){ 
-    if (timerActive) {
-        timerSeconds -= delta / 1000
-        if (timerSeconds <= 0) {
-            timerSeconds = 0
-            timerActive = false
-            timerBlinkTime = 0
-            timerBlinkState = false
-            timerText.setFill('#FFFF00')
+    updateDayNight(this, delta);
+
+    if (timerEnabled) {
+        if (timerActive) {
+            timerSeconds -= delta / 1000
+            if (timerSeconds <= 0) {
+                timerSeconds = 0
+                timerActive = false
+                timerBlinkTime = 0
+                timerBlinkState = false
+                timerText.setFill('#FFFF00')
+            }
+        } else {
+            timerBlinkTime += delta
+            if (timerBlinkTime >= 500) {
+                timerBlinkTime -= 500
+                timerBlinkState = !timerBlinkState
+                timerText.setVisible(timerBlinkState)
+            }
         }
+        timerText.setText(formatTimer(timerSeconds))
     } else {
-        timerBlinkTime += delta
-        if (timerBlinkTime >= 500) {
-            timerBlinkTime -= 500
-            timerBlinkState = !timerBlinkState
-            timerText.setVisible(timerBlinkState)
-        }
+        timerText.setVisible(false)
     }
-    timerText.setText(formatTimer(timerSeconds))
     
     let sx = this.cameras.main.scrollX
     config.clouds.x = sx
@@ -226,6 +294,8 @@ function createmap(mapID, scene){
     config.green=scene.add.tileSprite(0, config.map.heightInPixels-640,  config.map.widthInPixels, config.map.heightInPixels, 'green').setOrigin(0,0)
     config.darkgreen=scene.add.tileSprite(0, config.map.heightInPixels-480,  config.map.widthInPixels, config.map.heightInPixels, 'darkgreen').setOrigin(0,0)
 
+    createSkyEffects(scene, config.map.widthInPixels, config.map.heightInPixels)
+
     config.floorlayer = config.map.createLayer('floor', tiles, 0, 0).setCollisionBetween(1, 10000) 
     config.enemylayer =  config.map.createLayer('enemylayer', tiles, 0, 0).setCollisionBetween(1, 10000)
     config.assetlayer =  config.map.createLayer('assetlayer', tiles, 0, 0).setCollisionBetween(1, 10000)
@@ -242,6 +312,64 @@ function createmap(mapID, scene){
 
 
 
+}
+
+function createSkyEffects(scene, worldWidth, worldHeight) {
+    config.dayNight = { elapsed: 0, duration: 120000, night: 0 };
+    config.nightTint = scene.add.rectangle(0, 0, worldWidth, worldHeight, 0x101b3b, 1)
+        .setOrigin(0, 0)
+        .setAlpha(0);
+    config.nightTint.setDepth(0);
+
+    config.nightClouds = scene.add.graphics();
+    config.nightClouds.setDepth(0);
+    for (let x = 100; x < worldWidth; x += 520) {
+        let y = 180 + ((x * 13) % (worldHeight - 900));
+        let cloudWidth = 210 + ((x * 7) % 120);
+        config.nightClouds.fillStyle(0x11172e, 0.96);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.5, y + 26, cloudWidth, 58);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.3, y + 13, cloudWidth * 0.42, 48);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.58, y + 3, cloudWidth * 0.48, 62);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.8, y + 17, cloudWidth * 0.38, 46);
+        config.nightClouds.fillStyle(0x202744, 0.92);
+        config.nightClouds.fillEllipse(x + cloudWidth * 0.49, y + 30, cloudWidth * 0.88, 37);
+    }
+
+    config.starField = scene.add.graphics();
+    config.starField.setDepth(0);
+    let seed = 73421;
+    for (let index = 0; index < 210; index++) {
+        seed = (seed * 16807) % 2147483647;
+        let x = (seed / 2147483647) * worldWidth;
+        seed = (seed * 16807) % 2147483647;
+        let y = 60 + (seed / 2147483647) * (worldHeight - 900);
+        let radius = index % 9 === 0 ? 2.4 : 1 + (index % 3) * 0.35;
+        config.starField.fillStyle(0xffd95e, 0.22);
+        config.starField.fillCircle(x, y, radius * 3.4);
+        config.starField.fillStyle(index % 7 === 0 ? 0xfff1a6 : 0xffd95e, 0.96);
+        config.starField.fillCircle(x, y, radius);
+        if (index % 9 === 0) {
+            config.starField.lineStyle(1.5, 0xffe990, 0.92);
+            config.starField.lineBetween(x - 7, y, x + 7, y);
+            config.starField.lineBetween(x, y - 7, x, y + 7);
+        }
+    }
+
+}
+
+function updateDayNight(scene, delta) {
+    if (!config.dayNight) {
+        return;
+    }
+
+    config.dayNight.elapsed = (config.dayNight.elapsed + delta) % config.dayNight.duration;
+    let phase = config.dayNight.elapsed / config.dayNight.duration;
+    let night = timeMode === 'night' ? 1 : timeMode === 'day' ? 0 : (1 - Math.cos(phase * Math.PI * 2)) / 2;
+    config.dayNight.night = night;
+
+    config.nightTint.setAlpha(night * 0.48);
+    config.nightClouds.setAlpha(night * 0.92);
+    config.starField.setAlpha(night * (0.78 + Math.sin(scene.time.now * 0.003) * 0.16));
 }
 
 
