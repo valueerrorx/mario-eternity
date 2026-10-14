@@ -97,6 +97,7 @@ let player;
 let cursors;
 let wasd;
 let shootKey;
+let fireStatusText;
 let timerText;
 let timerSeconds = 300;
 let timerActive = true;
@@ -118,6 +119,8 @@ function preload () {
 
     
     this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
+    this.load.spritesheet('powerups', 'assets/powerups.png', { frameWidth: 64, frameHeight: 64 })
+    this.load.image('fireball', 'assets/fireball-small.png')
 
 
 
@@ -161,6 +164,24 @@ function create () {
     config.heartPickup.body.setAllowGravity(false);
     config.heartPickup.body.setImmovable(true);
     this.physics.add.overlap(player, config.heartPickup, collectHeart, null, this);
+    player.hasFireFlower = false
+
+    config.fireFlower = this.physics.add.sprite(352, 1512, 'powerups', 2)
+    config.fireFlower.setScale(0.75)
+    config.fireFlower.setDepth(61)
+    config.fireFlower.body.setAllowGravity(false)
+    config.fireFlower.body.setImmovable(true)
+    this.tweens.add({
+        targets: config.fireFlower,
+        y: config.fireFlower.y - 8,
+        duration: 650,
+        yoyo: true,
+        repeat: -1
+    })
+
+    fireStatusText = this.add.text(16, 56, 'Feuerblume: fehlt', { fontSize: '18px', fill: '#ffffff' })
+    fireStatusText.setScrollFactor(0)
+    fireStatusText.setDepth(100)
 
     this.cameras.main.startFollow(player)
 
@@ -181,6 +202,7 @@ function create () {
 
     this.physics.add.collider(player, config.floorlayer)
     this.physics.add.overlap(player, config.assetlayer, collect, assetTileOverlap, this)
+    this.physics.add.overlap(player, config.fireFlower, collectFireFlower, null, this)
 
     config.enemies = this.physics.add.group({
         classType: Phaser.Physics.Arcade.Sprite,
@@ -191,6 +213,11 @@ function create () {
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
     });
+    this.physics.world.on('worldbounds', body => {
+        if (body.gameObject.texture.key === 'fireball') {
+            body.gameObject.disableBody(true, true)
+        }
+    })
 
     spawnEnemies(this);
 
@@ -336,7 +363,7 @@ function update (time, delta){
     }
 
   
-    if (shootKey.isDown && this.time.now > config.lastShot) {
+    if (player.hasFireFlower && shootKey.isDown && this.time.now > config.lastShot) {
         shootBullet(this);
         config.lastShot = this.time.now + config.shotCooldown;
     }
@@ -750,6 +777,33 @@ function findGroundYAtX(x) {
     return 1680;
 }
 
+function playerdie(player, tile){
+    if (player.isDying) {
+        return
+    }
+
+    console.log("you died!")
+    player.isDying = true
+    player.hasFireFlower = false
+    fireStatusText.setText('Feuerblume: fehlt')
+    player.setTint(0xff6666)
+    player.body.enable = false
+
+    this.time.delayedCall(700, () => {
+        player.setPosition(330, 1800)
+        player.setVelocity(0, 0)
+        player.clearTint()
+        player.body.enable = true
+        player.isDying = false
+    })
+}
+
+function collectFireFlower(player, fireFlower) {
+    player.hasFireFlower = true
+    fireFlower.disableBody(true, true)
+    fireStatusText.setText('Feuerblume: E zum Schießen')
+}
+
 function spawnEnemies(scene) {
     createKoopaTextures(scene);
     (config.enemySpawns || []).forEach(spawn => {
@@ -780,7 +834,7 @@ function spawnEnemies(scene) {
 
 function shootBullet(scene) {
     let offsetX = player.facing === 'left' ? -30 : 30;
-    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
+    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'fireball');
     if (!bullet) {
         return;
     }
