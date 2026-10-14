@@ -89,8 +89,6 @@ let config = {
 let jumpCount = 0;
 
 
-
-
 let game = new Phaser.Game(config);  //our game instance - using the config object
 
 let player;
@@ -211,6 +209,13 @@ function create () {
 
     createLifeHud.call(this)
    
+    config.coinText = this.add.text(16, 56, 'Coins: ' + config.coins, {
+        fontSize: '24px',
+        fill: '#ffffff'
+    });
+    config.coinText.setScrollFactor(0);
+    config.coinText.setDepth(100);
+
     // Timer erstellen
     timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
     timerText.setScrollFactor(0)
@@ -449,7 +454,11 @@ function assetTileoverlap(player,tile){
 function collect(player,tile){
 
     console.log("coin");
-    config.interact.removeTileAt(tile.x,tile.y)
+    config.coins += 1
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+    if (config.coinText) {
+        config.coinText.setText('Coins: ' + config.coins)
+    }
 
 }
 
@@ -460,20 +469,11 @@ function death(player,tile){
 
 }
 
-
   
 function assetTileOverlap(player, tile) {
     return tile.index > 0
 }
 
-function collect(player, tile) {
-    //console.log("you got 1 coin")
-    config.assetlayer.removeTileAt(tile.x, tile.y)
-    config.coins += 1
-    if (config.coinText) {
-        config.coinText.setText('Coins: ' + config.coins)
-    }
-}
 
 function createLifeHud() {
     config.hearts = [];
