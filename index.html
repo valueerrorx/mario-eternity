@@ -1,4 +1,4 @@
-<html>
+  <html>
 <head>
 <title>Phaser Einführung</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -82,7 +82,7 @@ let config = {
     lives: 1,
     maxLives: 2,
     hearts: [],
-    playerSpawn: { x: 330, y: 1800 },
+    playerSpawn: { x: 330, y: 200 },
 };
 
 
@@ -147,7 +147,8 @@ function create () {
     // Mario mit Physik aktivieren
     player = this.physics.add.sprite(config.playerSpawn.x, config.playerSpawn.y, 'mario');
     player.setCircle(28, -2, 8)
-    player.setCollideWorldBounds(true);
+    player.setCollideWorldBounds(false);
+    this.physics.world.setBoundsCollision(true, true, true, false);
     player.speed = 400
     player.setDepth(50)
     player.invulnerable = false;
@@ -250,6 +251,13 @@ function create () {
     timerActive = true;
     timerBlinkTime = 0;
     timerBlinkState = false;
+
+    config.gameOverText = this.add.text(config.width / 2, config.height / 2, 'GAME OVER', {
+        fontSize: '52px',
+        color: '#ffffff',
+        fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(200);
+    config.gameOverText.setVisible(false);
 }
 
 function formatTimer(seconds) {
@@ -305,25 +313,24 @@ function setupSettingsControls() {
 
 // runs 60times per second - everything that needs updates goes here..
 function update (time, delta){ 
-    updateDayNight(this, delta);
+    if (config.lives <= 0) {
+        if (config.gameOverText) {
+            config.gameOverText.setVisible(true);
+        }
+        if (player) {
+            player.setVelocity(0, 0);
+        }
+        return;
+    }
 
-    if (timerEnabled) {
-        if (timerActive) {
-            timerSeconds -= delta / 1000
-            if (timerSeconds <= 0) {
-                timerSeconds = 0
-                timerActive = false
-                timerBlinkTime = 0
-                timerBlinkState = false
-                timerText.setFill('#FFFF00')
-            }
-        } else {
-            timerBlinkTime += delta
-            if (timerBlinkTime >= 500) {
-                timerBlinkTime -= 500
-                timerBlinkState = !timerBlinkState
-                timerText.setVisible(timerBlinkState)
-            }
+    if (timerActive) {
+        timerSeconds -= delta / 1000
+        if (timerSeconds <= 0) {
+            timerSeconds = 0
+            timerActive = false
+            timerBlinkTime = 0
+            timerBlinkState = false
+            timerText.setFill('#FFFF00')
         }
         timerText.setText(formatTimer(timerSeconds))
     } else {
@@ -375,6 +382,10 @@ function update (time, delta){
 
     if (!player.body.blocked.down){
     player.setFrame(5)
+    }
+
+    if (player.y > config.map.heightInPixels + 80 && !player.invulnerable) {
+        loseLife.call(this, 'fall');
     }
 
 }
@@ -501,6 +512,63 @@ function assetTileOverlap(player, tile) {
     return tile.index > 0
 }
 
+function collect(player, tile) {
+    if (!tile) return;
+
+    if (isHazardTile(tile.index)) {
+        loseLife.call(this, 'spikes');
+        return;
+    }
+
+    config.assetlayer.removeTileAt(tile.x, tile.y)
+    config.coins += 1
+    if (config.coinText) {
+        config.coinText.setText('Coins: ' + config.coins)
+    }
+}
+
+function isHazardTile(tileIndex) {
+    return (tileIndex >= 77 && tileIndex <= 140) || (tileIndex >= 155 && tileIndex <= 206);
+}
+
+function respawnPlayer() {
+    if (!player || !config.map) {
+        return;
+    }
+
+    const safeX = Phaser.Math.Clamp(config.playerSpawn.x, 40, config.map.widthInPixels - 40);
+    const safeY = Phaser.Math.Clamp(config.playerSpawn.y, 80, config.map.heightInPixels - 80);
+    player.setPosition(safeX, safeY);
+    player.setVelocity(0, 0);
+}
+
+function loseLife(reason) {
+    if (!player || player.invulnerable) {
+        return;
+    }
+
+    config.lives = Math.max(0, config.lives - 1);
+    updateLifeHud();
+
+    player.invulnerable = true;
+    player.setTint(0xffb3b3);
+    player.setVelocityY(-320);
+    player.setVelocityX(player.x < config.playerSpawn.x ? -220 : 220);
+    respawnPlayer();
+
+    if (config.lives <= 0) {
+        player.disableBody(true, true);
+        if (config.gameOverText) {
+            config.gameOverText.setVisible(true);
+        }
+        return;
+    }
+
+    this.time.delayedCall(1000, () => {
+        player.clearTint();
+        player.invulnerable = false;
+    }, [], this);
+}
 
 function createLifeHud() {
     config.hearts = [];
@@ -545,7 +613,10 @@ function handlePlayerHit(playerSprite, enemy) {
     updateLifeHud();
 
     if (config.lives <= 0) {
-        this.scene.restart();
+        playerSprite.disableBody(true, true);
+        if (config.gameOverText) {
+            config.gameOverText.setVisible(true);
+        }
         return;
     }
 
