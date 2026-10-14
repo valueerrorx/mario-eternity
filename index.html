@@ -44,6 +44,10 @@ let config = {
     shells: null,
     shotCooldown: 200,
     lastShot: 0
+    lives: 1,
+    maxLives: 2,
+    hearts: [],
+    playerSpawn: { x: 330, y: 1800 },
 };
 
 
@@ -70,7 +74,8 @@ function preload () {
     // this.load.image('mario','assets/mario.png')
     this.load.image('green','assets/green.png')
     this.load.image('darkgreen','assets/darkgreen.png')
-
+    this.load.image('enemy', 'assets/green.png')
+    this.load.image('bullet', 'assets/green.png')
 
     
     this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
@@ -91,11 +96,23 @@ function create () {
 
 
     // Mario mit Physik aktivieren
-    player = this.physics.add.sprite(330, 1800, 'mario');
+    player = this.physics.add.sprite(config.playerSpawn.x, config.playerSpawn.y, 'mario');
     player.setCircle(28, -2, 8)
     player.setCollideWorldBounds(true);
     player.speed = 400
     player.setDepth(50)
+    player.invulnerable = false;
+
+    config.heartPickup = this.add.text(220, 350, '❤', {
+        fontSize: '28px',
+        color: '#ff4d6d',
+        fontStyle: 'bold'
+    });
+    config.heartPickup.setDepth(80);
+    this.physics.add.existing(config.heartPickup);
+    config.heartPickup.body.setAllowGravity(false);
+    config.heartPickup.body.setImmovable(true);
+    this.physics.add.overlap(player, config.heartPickup, collectHeart, null, this);
 
     this.cameras.main.startFollow(player)
 
@@ -129,12 +146,13 @@ function create () {
 
     spawnEnemies(this);
 
-    this.physics.add.collider(player, config.enemies, handlePlayerEnemyCollision, null, this)
-    this.physics.add.collider(player, config.shells, handlePlayerShellCollision, null, this)
+    this.physics.add.collider(player, config.enemies, playerdie, null, this)
     this.physics.add.collider(config.enemies, config.floorlayer)
     this.physics.add.collider(config.shells, config.floorlayer)
     this.physics.add.collider(config.shells, config.enemies, shellHitsEnemy, null, this)
     this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
+
+    createLifeHud.call(this)
    
     // Timer erstellen
     timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
@@ -297,8 +315,62 @@ function collect(player, tile) {
     }
 }
 
-function playerdie(player, tile){
-    console.log("you died!")
+function createLifeHud() {
+    config.hearts = [];
+    const startX = config.width - 26;
+
+    for (let i = 0; i < config.maxLives; i++) {
+        const heart = this.add.text(startX - i * 28, 18, '❤', {
+            fontSize: '28px',
+            color: '#ff4d6d',
+            fontStyle: 'bold'
+        }).setScrollFactor(0);
+        heart.setDepth(100);
+        config.hearts.push(heart);
+    }
+
+    updateLifeHud();
+}
+
+function updateLifeHud() {
+    config.hearts.forEach((heart, index) => {
+        heart.setVisible(index < config.lives);
+    });
+}
+
+function collectHeart(playerSprite, heartPickup) {
+    if (!playerSprite || !heartPickup || config.lives >= config.maxLives) {
+        return;
+    }
+
+    config.lives = Math.min(config.maxLives, config.lives + 1);
+    updateLifeHud();
+    heartPickup.disableBody(true, true);
+    heartPickup.setVisible(false);
+}
+
+function handlePlayerHit(playerSprite, enemy) {
+    if (!playerSprite || !enemy || playerSprite.invulnerable) {
+        return;
+    }
+
+    config.lives = Math.max(0, config.lives - 1);
+    updateLifeHud();
+    playerSprite.invulnerable = true;
+    playerSprite.setTint(0xffb3b3);
+    playerSprite.setVelocityY(-320);
+    playerSprite.setVelocityX(playerSprite.x < enemy.x ? -220 : 220);
+    playerSprite.setPosition(config.playerSpawn.x, config.playerSpawn.y);
+
+    if (config.lives <= 0) {
+        playerSprite.disableBody(true, true);
+        return;
+    }
+
+    this.time.delayedCall(1000, () => {
+        playerSprite.clearTint();
+        playerSprite.invulnerable = false;
+    }, [], this);
     if (player && player.scene) {
         player.setPosition(330, 1700)
         player.setVelocity(0, 0)
