@@ -1,12 +1,6 @@
-class MenuScene extends Phaser.Scene {
+export class MenuScene extends Phaser.Scene {
     constructor() {
         super('MenuScene');
-    }
-
-    preload() {
-        this.load.image('clouds', 'assets/clouds.jpg');
-        this.load.image('green', 'assets/green.png');
-        this.load.image('darkgreen', 'assets/darkgreen.png');
     }
 
     create() {
