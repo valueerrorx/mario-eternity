@@ -75,7 +75,7 @@ export function createHud(scene, lives, maxLives) {
 }
 
 export function updateHud(delta) {
-    if (timerActive) {
+    if (timerActive && timerEnabled) {
         timerSeconds -= delta / 1000;
         if (timerSeconds <= 0) {
             timerSeconds = 0;
