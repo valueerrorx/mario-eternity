@@ -3,7 +3,10 @@ let coins = 0;
 let coinText = null;
 let fireStatusText = null;
 let timerText = null;
+let timerPanel = null;
+let timerRing = null;
 let timerSeconds = 300;
+const timerDuration = 300;
 let timerActive = true;
 let timerEnabled = true;
 let gameOverText = null;
@@ -13,6 +16,7 @@ export function createHud(scene, lives, maxLives) {
     coins = 0;
     timerSeconds = 300;
     timerActive = true;
+    timerEnabled = document.getElementById('timer-toggle').checked;
     hearts = [];
 
     const startX = scene.scale.width - 26;
@@ -35,10 +39,32 @@ export function createHud(scene, lives, maxLives) {
     coinText.setScrollFactor(0);
     coinText.setDepth(100);
 
-    timerText = scene.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
-    timerText.setScrollFactor(0);
-    timerText.setDepth(100);
-    timerText.setVisible(timerEnabled);
+    timerPanel = scene.add.container(scene.scale.width / 2, 14).setScrollFactor(0).setDepth(100);
+    const timerBackground = scene.add.graphics();
+    timerBackground.fillStyle(0x102126, 0.94);
+    timerBackground.fillRoundedRect(-82, 0, 164, 64, 12);
+    timerBackground.lineStyle(1, 0xd8cda7, 0.55);
+    timerBackground.strokeRoundedRect(-82, 0, 164, 64, 12);
+    timerPanel.add(timerBackground);
+
+    timerRing = scene.add.graphics();
+    timerPanel.add(timerRing);
+
+    timerPanel.add(scene.add.text(-53, 12, 'ZEIT', {
+        fontFamily: 'Trebuchet MS, sans-serif',
+        fontSize: '10px',
+        color: '#b8c9bd',
+        fontStyle: 'bold'
+    }));
+    timerText = scene.add.text(-54, 25, formatTimer(timerSeconds), {
+        fontFamily: 'monospace',
+        fontSize: '25px',
+        color: '#fff1c6',
+        fontStyle: 'bold'
+    });
+    timerPanel.add(timerText);
+    timerPanel.setVisible(timerEnabled);
+    updateTimerRing();
 
     gameOverText = scene.add.text(scene.scale.width / 2, scene.scale.height / 2, 'GAME OVER', {
         fontSize: '52px',
@@ -54,11 +80,9 @@ export function updateHud(delta) {
         if (timerSeconds <= 0) {
             timerSeconds = 0;
             timerActive = false;
-            timerText.setFill('#FFFF00');
         }
         timerText.setText(formatTimer(timerSeconds));
-    } else {
-        timerText.setVisible(false);
+        updateTimerRing();
     }
 }
 
@@ -104,8 +128,8 @@ export function setupSettings(onTimeMode) {
 
     document.getElementById('timer-toggle').addEventListener('change', event => {
         timerEnabled = event.target.checked;
-        if (timerText) {
-            timerText.setVisible(timerEnabled);
+        if (timerPanel) {
+            timerPanel.setVisible(timerEnabled);
         }
     });
 
@@ -121,8 +145,23 @@ export function setupSettings(onTimeMode) {
 }
 
 function formatTimer(seconds) {
-    const time = Math.max(seconds, 0);
-    const wholeSeconds = Math.floor(time);
-    const ms = Math.floor((time - wholeSeconds) * 1000);
-    return `${wholeSeconds}s ${ms.toString().padStart(3, '0')}ms`;
+    const wholeSeconds = Math.ceil(Math.max(seconds, 0));
+    const minutes = Math.floor(wholeSeconds / 60);
+    const remainder = wholeSeconds % 60;
+    return `${minutes}:${remainder.toString().padStart(2, '0')}`;
+}
+
+function updateTimerRing() {
+    const progress = timerSeconds / timerDuration;
+    const color = progress <= 0.1 ? 0xf06b58 : progress <= 0.2 ? 0xf1bd62 : 0x79c99e;
+    timerRing.clear();
+    timerRing.lineStyle(3, 0x52615b, 0.8);
+    timerRing.beginPath();
+    timerRing.arc(0, 32, 21, -Math.PI / 2, Math.PI * 1.5);
+    timerRing.strokePath();
+    timerRing.lineStyle(3, color, 1);
+    timerRing.beginPath();
+    timerRing.arc(0, 32, 21, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    timerRing.strokePath();
+    timerText.setColor(progress <= 0.1 ? '#ff8b76' : '#fff1c6');
 }
