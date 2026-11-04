@@ -37,6 +37,9 @@ let config = {
     player: null,
     coins: 0,
     coinText: null,
+    katana: null,
+    katanaThrows: null,
+    hasKatana: false,
 };
 
 
@@ -67,6 +70,8 @@ function preload () {
 
     
     this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 } )
+    this.load.spritesheet('samuraiMario', 'assets/mariospritesheet-samurai.png', { frameWidth: 50, frameHeight: 67 } )
+    this.load.image('katana', 'assets/katana.svg')
 
 
 
@@ -91,12 +96,24 @@ function create () {
     player.speed = 400
     player.setDepth(50)
 
+    config.katana = this.physics.add.staticImage(27 * 32 + 16, 42 * 32 - 32, 'katana')
+        .setDisplaySize(48, 48)
+        .setDepth(45)
+    config.katana.refreshBody()
+    this.physics.add.overlap(player, config.katana, collectKatana, null, this)
+
     this.cameras.main.startFollow(player)
 
     this.anims.create({
         key: 'walk',
         frameRate: 16,
         frames: this.anims.generateFrameNumbers( 'mario', { frames: [2,3,4,3,2,1,0,1 ] })
+    })
+
+    this.anims.create({
+        key: 'samuraiWalk',
+        frameRate: 16,
+        frames: this.anims.generateFrameNumbers('samuraiMario', { frames: [2,3,4,3,2,1,0,1] })
     })
 
     wasd = this.input.keyboard.addKeys({
@@ -115,13 +132,14 @@ function create () {
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
     });
-    config.bullets = this.physics.add.group();
+    config.katanaThrows = this.physics.add.group();
 
     spawnEnemies(this);
 
     this.physics.add.collider(player, config.enemies, playerdie, null, this)
     this.physics.add.collider(config.enemies, config.floorlayer)
-    this.physics.add.overlap(config.bullets, config.enemies, bulletHitEnemy, null, this)
+    this.physics.add.collider(config.katanaThrows, config.floorlayer, consumeKatanaThrow)
+    this.physics.add.overlap(config.katanaThrows, config.enemies, katanaHitEnemy, null, this)
    
     // Timer erstellen
     timerText = this.add.text(16, 16, formatTimer(timerSeconds), { fontSize: '32px', fill: 'red', fontStyle: 1000 });
@@ -172,19 +190,27 @@ function update (time, delta){
     config.green.x = sx * 0.4
     config.darkgreen.x = sx * 0.2
 
+    let walkAnimation = player.texture.key === 'samuraiMario' ? 'samuraiWalk' : 'walk'
+
+    config.katanaThrows.children.iterate(projectile => {
+        if (projectile.active && time >= projectile.getData('expireAt')) {
+            consumeKatanaThrow(projectile)
+        }
+    })
+
     // Bewegung nach links
     if (wasd.left.isDown) {
         player.setVelocityX(-player.speed);
         player.setFlipX(false);
         player.facing = 'left';
-        player.anims.play('walk', true)
+        player.anims.play(walkAnimation, true)
 
 
     } else if (wasd.right.isDown) {
         player.setVelocityX(player.speed);
         player.setFlipX(true);
         player.facing = 'right';
-        player.anims.play('walk', true)
+        player.anims.play(walkAnimation, true)
 
 
     } else {
@@ -203,9 +229,8 @@ function update (time, delta){
     }
 
   
-    if (shootKey.isDown && this.time.now > config.lastShot) {
-        shootBullet(this);
-        config.lastShot = this.time.now + config.shotCooldown;
+    if (config.hasKatana && Phaser.Input.Keyboard.JustDown(shootKey)) {
+        throwKatana(this)
     }
 
     if (!player.body.blocked.down){
@@ -282,6 +307,18 @@ function collect(player, tile) {
     }
 }
 
+function collectKatana() {
+    if (!config.katana) {
+        return
+    }
+
+    config.katana.destroy()
+    config.katana = null
+    config.hasKatana = true
+    player.anims.stop()
+    player.setTexture('samuraiMario')
+}
+
 function playerdie(player, tile){
     console.log("you died!")
 }
@@ -302,31 +339,43 @@ function spawnEnemies(scene) {
     });
 }
 
-function shootBullet(scene) {
-    let offsetX = player.facing === 'left' ? -30 : 30;
-    let bullet = config.bullets.get(player.x + offsetX, player.y - 10, 'bullet');
-    if (!bullet) {
+function throwKatana(scene) {
+    let direction = player.facing === 'left' ? -1 : 1
+    let katana = config.katanaThrows.get(
+        player.x + direction * 30,
+        player.y + 9,
+        'katana'
+    )
+    if (!katana) {
         return;
     }
 
-    bullet.enableBody(true, player.x + offsetX, player.y - 10, true, true);
-    bullet.body.setAllowGravity(false);
-    bullet.body.setVelocityX(player.facing === 'left' ? -900 : 900);
-    bullet.body.setVelocityY(0);
-    bullet.body.setCollideWorldBounds(true);
-    bullet.body.onWorldBounds = true;
-    bullet.setDepth(60);
-    bullet.setActive(true);
-    bullet.setVisible(true);
+    katana.enableBody(true, player.x + direction * 30, player.y + 9, true, true)
+    katana.body.setAllowGravity(false)
+    katana.body.setVelocity(direction * 900, 0)
+    katana.setDisplaySize(38, 38)
+    katana.body.setSize(68, 24)
+    katana.setFlipX(direction < 0)
+    katana.setAngle(direction < 0 ? -45 : 45)
+    katana.setDepth(60)
+    katana.setData('expireAt', scene.time.now + 1400)
 }
 
-function bulletHitEnemy(bullet, enemy) {
-    if (!bullet || !enemy) {
+function consumeKatanaThrow(katana) {
+    if (!katana || !katana.active) {
         return;
     }
-    bullet.disableBody(true, true);
+
+    katana.disableBody(true, true)
+}
+
+function katanaHitEnemy(katana, enemy) {
+    if (!katana || !enemy || !katana.active || !enemy.active) {
+        return;
+    }
+
+    consumeKatanaThrow(katana)
     enemy.disableBody(true, true);
-    console.log("enemy hit!");
 }
 
 
