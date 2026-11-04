@@ -18,7 +18,7 @@ export class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         const levels = [1];
-        const buttonWidth = 160;
+        const buttonWidth = 220;
         const buttonHeight = 60;
         const spacing = 180;
         const buttonColor = '#ffab2c';
@@ -33,7 +33,7 @@ export class MenuScene extends Phaser.Scene {
                 .setStrokeStyle(4, 0xf8d14f, 1)
                 .setInteractive({ useHandCursor: true });
 
-            this.add.text(x, y, String(level), {
+            this.add.text(x, y, 'START GAME', {
                 fontFamily: 'Arial',
                 fontSize: '32px',
                 color: '#ffffff',
