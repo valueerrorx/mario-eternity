@@ -80,35 +80,168 @@ function createKoopaTextures(scene) {
     }
 
     const gfx = scene.make.graphics({ x: 0, y: 0, add: false });
-    gfx.fillStyle(0x5abf4b, 1);
-    gfx.fillRoundedRect(0, 0, 42, 36, 8);
-    gfx.fillStyle(0x8fe07d, 1);
-    gfx.fillRoundedRect(7, 7, 28, 18, 6);
-    gfx.fillStyle(0x2f6d2a, 1);
-    gfx.fillRoundedRect(8, 20, 26, 10, 4);
-    gfx.fillStyle(0x2d1b12, 1);
-    gfx.fillCircle(12, 12, 3);
-    gfx.fillCircle(30, 12, 3);
+
+    // Build the rear limbs first so the shell sits naturally over the body.
+    gfx.fillStyle(0x315e25, 1);
+    gfx.fillEllipse(13, 27, 8, 8);
+    gfx.fillEllipse(27, 27, 8, 8);
+    gfx.fillStyle(0x72ad3b, 1);
+    gfx.fillEllipse(13, 26, 5, 6);
+    gfx.fillEllipse(27, 26, 5, 6);
+    gfx.fillStyle(0xe4ddc4, 1);
+    gfx.fillTriangle(10, 30, 12, 28, 12, 32);
+    gfx.fillTriangle(14, 31, 14, 28, 16, 31);
+    gfx.fillTriangle(24, 31, 25, 28, 27, 31);
+    gfx.fillTriangle(28, 31, 29, 28, 31, 30);
+
+    // Belly and neck, shaded with warm olive tones.
+    gfx.fillStyle(0x315d28, 1);
+    gfx.fillEllipse(21, 22, 16, 11);
+    gfx.fillStyle(0xa6a06b, 1);
+    gfx.fillEllipse(21, 21, 12, 8);
+    gfx.fillStyle(0xc5b985, 1);
+    gfx.fillEllipse(20, 20, 8, 5);
+    gfx.lineStyle(0.7, 0x746e49, 0.85);
+    gfx.lineBetween(17, 18, 18, 25);
+    gfx.lineBetween(21, 17, 21, 26);
+    gfx.lineBetween(25, 18, 24, 25);
+
+    // Ivory rim under the deep red shell.
+    gfx.fillStyle(0x51301e, 1);
+    gfx.fillEllipse(19, 14, 20, 15);
+    gfx.fillStyle(0xe6dfc7, 1);
+    gfx.fillEllipse(19, 13, 19, 14);
+    gfx.fillStyle(0x7d2821, 1);
+    gfx.fillEllipse(19, 11, 17, 12);
+    gfx.fillStyle(0xb84331, 1);
+    gfx.fillEllipse(18, 9, 13, 8);
+    gfx.fillStyle(0xd66a48, 0.9);
+    gfx.fillEllipse(15, 7, 7, 3);
+
+    // Raised shell plates and fine dark seams.
+    gfx.lineStyle(0.8, 0x4b201a, 0.95);
+    gfx.lineBetween(19, 5, 19, 17);
+    gfx.lineBetween(9, 9, 29, 9);
+    gfx.lineBetween(12, 5, 10, 12);
+    gfx.lineBetween(26, 5, 29, 12);
+    gfx.fillStyle(0x8e3027, 1);
+    gfx.fillTriangle(19, 6, 12, 9, 19, 12);
+    gfx.fillTriangle(19, 6, 26, 9, 19, 12);
+    gfx.fillTriangle(12, 9, 11, 14, 19, 12);
+    gfx.fillTriangle(26, 9, 28, 14, 19, 12);
+    gfx.fillStyle(0xd36a48, 0.8);
+    gfx.fillTriangle(16, 7, 19, 6, 17, 10);
+    gfx.fillTriangle(22, 7, 25, 8, 21, 10);
+    gfx.lineStyle(0.7, 0xf3ecd8, 0.9);
+    gfx.lineBetween(11, 14, 27, 14);
+
+    // Scaled green head, eye ridge, nostrils, and a small beak.
+    gfx.fillStyle(0x294e22, 1);
+    gfx.fillEllipse(31, 17, 13, 11);
+    gfx.fillStyle(0x5d9c35, 1);
+    gfx.fillEllipse(31, 16, 11, 9);
+    gfx.fillStyle(0x8abd4c, 1);
+    gfx.fillEllipse(30, 14, 7, 4);
+    gfx.fillStyle(0xf0dfb8, 1);
+    gfx.fillEllipse(32, 16, 3.2, 4.5);
+    gfx.fillStyle(0x181b12, 1);
+    gfx.fillEllipse(33, 16, 1.2, 2.6);
+    gfx.fillStyle(0xffffff, 0.9);
+    gfx.fillCircle(33.4, 15.2, 0.6);
+    gfx.fillStyle(0x315d28, 1);
+    gfx.fillTriangle(35, 19, 40, 20, 35, 22);
+    gfx.fillStyle(0x20271a, 1);
+    gfx.fillCircle(36, 19, 0.55);
+
+    // Scales on the cheek and forelegs add texture at the 1.5x game size.
+    gfx.fillStyle(0x98c85a, 0.9);
+    gfx.fillCircle(29, 19, 0.8);
+    gfx.fillCircle(32, 21, 0.7);
+    gfx.fillCircle(35, 18, 0.65);
+    gfx.fillStyle(0x426f2d, 1);
+    gfx.fillEllipse(23, 28, 6, 7);
+    gfx.fillEllipse(34, 27, 6, 7);
+    gfx.fillStyle(0x79ad3e, 1);
+    gfx.fillEllipse(23, 27, 4, 5);
+    gfx.fillEllipse(34, 26, 4, 5);
+    gfx.fillStyle(0xe6ddc4, 1);
+    gfx.fillTriangle(21, 31, 22, 28, 24, 31);
+    gfx.fillTriangle(24, 31, 25, 28, 27, 30);
+    gfx.fillTriangle(32, 30, 33, 27, 35, 30);
+    gfx.fillTriangle(35, 30, 37, 27, 38, 29);
+    gfx.fillStyle(0xa0c85c, 0.9);
+    gfx.fillCircle(22, 25, 0.8);
+    gfx.fillCircle(24, 27, 0.7);
+    gfx.fillCircle(33, 24, 0.7);
+    gfx.fillCircle(35, 26, 0.8);
+
     gfx.generateTexture('koopa', 42, 36);
 
     gfx.clear();
-    gfx.fillStyle(0x3f9730, 1);
-    gfx.fillRoundedRect(0, 0, 30, 22, 7);
-    gfx.fillStyle(0x285c2c, 1);
-    gfx.fillRoundedRect(7, 5, 16, 10, 4);
-    gfx.fillStyle(0x1f1a18, 1);
-    gfx.fillCircle(9, 9, 2);
-    gfx.fillCircle(21, 9, 2);
+
+    gfx.fillStyle(0x50291e, 1);
+    gfx.fillEllipse(15, 12, 28, 19);
+    gfx.fillStyle(0xe6dfc7, 1);
+    gfx.fillEllipse(15, 11, 27, 18);
+    gfx.fillStyle(0x79261f, 1);
+    gfx.fillEllipse(15, 9, 24, 15);
+    gfx.fillStyle(0xb64030, 1);
+    gfx.fillEllipse(14, 7, 17, 10);
+    gfx.fillStyle(0xd96b49, 0.9);
+    gfx.fillEllipse(11, 5, 8, 3);
+    gfx.lineStyle(1, 0x4d211b, 1);
+    gfx.lineBetween(15, 2, 15, 15);
+    gfx.lineBetween(3, 7, 27, 7);
+    gfx.lineBetween(7, 4, 6, 11);
+    gfx.lineBetween(23, 4, 25, 11);
+    gfx.fillStyle(0x913128, 1);
+    gfx.fillTriangle(15, 3, 7, 7, 15, 10);
+    gfx.fillTriangle(15, 3, 23, 7, 15, 10);
+    gfx.fillTriangle(7, 7, 6, 12, 15, 10);
+    gfx.fillTriangle(23, 7, 25, 12, 15, 10);
+    gfx.lineStyle(1, 0xf3ecd8, 0.95);
+    gfx.lineBetween(5, 14, 25, 14);
     gfx.generateTexture('koopa_shell', 30, 22);
 
     gfx.clear();
-    gfx.fillStyle(0x5abf4b, 1);
-    gfx.fillRoundedRect(0, 0, 42, 36, 8);
-    gfx.fillStyle(0x8fe07d, 1);
-    gfx.fillRoundedRect(7, 7, 28, 18, 6);
-    gfx.fillStyle(0x2d1b12, 1);
-    gfx.fillCircle(12, 12, 3);
-    gfx.fillCircle(30, 12, 3);
+
+    gfx.fillStyle(0x315e25, 1);
+    gfx.fillEllipse(13, 27, 8, 8);
+    gfx.fillEllipse(27, 27, 8, 8);
+    gfx.fillStyle(0x72ad3b, 1);
+    gfx.fillEllipse(13, 26, 5, 6);
+    gfx.fillEllipse(27, 26, 5, 6);
+    gfx.fillStyle(0xa6a06b, 1);
+    gfx.fillEllipse(21, 21, 12, 8);
+    gfx.fillStyle(0xc5b985, 1);
+    gfx.fillEllipse(20, 20, 8, 5);
+    gfx.lineStyle(0.7, 0x746e49, 0.85);
+    gfx.lineBetween(17, 18, 18, 25);
+    gfx.lineBetween(21, 17, 21, 26);
+    gfx.lineBetween(25, 18, 24, 25);
+    gfx.fillStyle(0x294e22, 1);
+    gfx.fillEllipse(31, 17, 13, 11);
+    gfx.fillStyle(0x5d9c35, 1);
+    gfx.fillEllipse(31, 16, 11, 9);
+    gfx.fillStyle(0x8abd4c, 1);
+    gfx.fillEllipse(30, 14, 7, 4);
+    gfx.fillStyle(0xf0dfb8, 1);
+    gfx.fillEllipse(32, 16, 3.2, 4.5);
+    gfx.fillStyle(0x181b12, 1);
+    gfx.fillEllipse(33, 16, 1.2, 2.6);
+    gfx.fillStyle(0x315d28, 1);
+    gfx.fillTriangle(35, 19, 40, 20, 35, 22);
+    gfx.fillStyle(0x426f2d, 1);
+    gfx.fillEllipse(23, 28, 6, 7);
+    gfx.fillEllipse(34, 27, 6, 7);
+    gfx.fillStyle(0x79ad3e, 1);
+    gfx.fillEllipse(23, 27, 4, 5);
+    gfx.fillEllipse(34, 26, 4, 5);
+    gfx.fillStyle(0xe6ddc4, 1);
+    gfx.fillTriangle(21, 31, 22, 28, 24, 31);
+    gfx.fillTriangle(24, 31, 25, 28, 27, 30);
+    gfx.fillTriangle(32, 30, 33, 27, 35, 30);
+    gfx.fillTriangle(35, 30, 37, 27, 38, 29);
     gfx.generateTexture('koopa_naked', 42, 36);
     gfx.destroy();
 }
@@ -129,9 +262,10 @@ function createDetachedShell(enemy) {
     shell.setActive(true);
     shell.setVisible(true);
     shell.setDepth(48);
+    shell.setScale(1.5);
     shell.setVelocity(0, 0);
     shell.body.setAllowGravity(false);
-    shell.body.setSize(30, 22);
+    shell.body.setSize(45, 33);
     shell.body.setOffset(0, 0);
     shell.direction = enemy.direction || -1;
     shell.setFlipX(shell.direction > 0);
@@ -292,10 +426,11 @@ function spawnEnemies(scene) {
         enemy.setActive(true);
         enemy.setVisible(true);
         enemy.setDepth(45);
+        enemy.setScale(1.5);
         enemy.body.setAllowGravity(false);
         enemy.setCollideWorldBounds(false);
         enemy.setBounce(0, 0);
-        enemy.body.setSize(30, 30);
+        enemy.body.setSize(45, 45);
         enemy.body.setOffset(6, 6);
         enemy.setVelocityX(-enemy.speed);
         enemy.setVelocityY(0);
