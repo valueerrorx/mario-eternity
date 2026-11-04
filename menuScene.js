@@ -18,7 +18,7 @@ export class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         const levels = [1];
-        const buttonWidth = 220;
+        const buttonWidth = 320;
         const buttonHeight = 60;
         const spacing = 180;
         const buttonColor = '#ffab2c';
