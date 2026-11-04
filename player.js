@@ -11,6 +11,7 @@ let lastShot = 0;
 let player = null;
 let wasd = null;
 let shootKey = null;
+let katanaKey = null;
 
 export function getPlayer() {
     return player;
@@ -37,6 +38,7 @@ export function createPlayer(scene) {
     player.setDepth(50);
     player.invulnerable = false;
     player.hasFireFlower = false;
+    player.hasKatana = false;
 
     const heartPickup = scene.add.text(220, 350, '❤', {
         fontSize: '28px',
@@ -63,12 +65,25 @@ export function createPlayer(scene) {
     });
     scene.physics.add.overlap(player, fireFlower, collectFireFlower, null, scene);
 
+    const katana = scene.physics.add.staticImage(27 * 32 + 16, 42 * 32 - 32, 'katana')
+        .setDisplaySize(48, 48)
+        .setDepth(45);
+    katana.refreshBody();
+    scene.physics.add.overlap(player, katana, collectKatana, null, scene);
+
     scene.cameras.main.startFollow(player);
     scene.anims.create({
         key: 'walk',
         frameRate: 16,
         frames: scene.anims.generateFrameNumbers('mario', { frames: [2, 3, 4, 3, 2, 1, 0, 1] })
     });
+    if (!scene.anims.exists('samuraiWalk')) {
+        scene.anims.create({
+            key: 'samuraiWalk',
+            frameRate: 16,
+            frames: scene.anims.generateFrameNumbers('samuraiMario', { frames: [2, 3, 4, 3, 2, 1, 0, 1] })
+        });
+    }
 
     wasd = scene.input.keyboard.addKeys({
         up: Phaser.Input.Keyboard.KeyCodes.SPACE,
@@ -77,19 +92,21 @@ export function createPlayer(scene) {
         right: Phaser.Input.Keyboard.KeyCodes.D
     });
     shootKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    katanaKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 }
 
-export function updatePlayer(scene, onShoot) {
+export function updatePlayer(scene, onShoot, onThrowKatana) {
+    const walkAnimation = player.texture.key === 'samuraiMario' ? 'samuraiWalk' : 'walk';
     if (wasd.left.isDown) {
         player.setVelocityX(-player.speed);
         player.setFlipX(false);
         player.facing = 'left';
-        player.anims.play('walk', true);
+        player.anims.play(walkAnimation, true);
     } else if (wasd.right.isDown) {
         player.setVelocityX(player.speed);
         player.setFlipX(true);
         player.facing = 'right';
-        player.anims.play('walk', true);
+        player.anims.play(walkAnimation, true);
     } else {
         player.setVelocityX(0);
         player.setFrame(2);
@@ -106,6 +123,10 @@ export function updatePlayer(scene, onShoot) {
     if (player.hasFireFlower && shootKey.isDown && scene.time.now > lastShot) {
         onShoot();
         lastShot = scene.time.now + shotCooldown;
+    }
+
+    if (player.hasKatana && onThrowKatana && Phaser.Input.Keyboard.JustDown(katanaKey)) {
+        onThrowKatana();
     }
 
     if (!player.body.blocked.down) {
@@ -192,4 +213,14 @@ function collectFireFlower(playerSprite, fireFlower) {
     playerSprite.hasFireFlower = true;
     fireFlower.disableBody(true, true);
     setFireStatus('Feuerblume: F zum Schießen');
+}
+
+function collectKatana(playerSprite, katana) {
+    if (!katana || !katana.active) {
+        return;
+    }
+    katana.destroy();
+    playerSprite.hasKatana = true;
+    playerSprite.anims.stop();
+    playerSprite.setTexture('samuraiMario');
 }

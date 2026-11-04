@@ -11,6 +11,8 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('enemy', 'assets/green.png');
         this.load.image('bullet', 'assets/green.png');
         this.load.spritesheet('mario', 'assets/mariospritesheet-big.png', { frameWidth: 50, frameHeight: 67 });
+        this.load.spritesheet('samuraiMario', 'assets/mariospritesheet-samurai.png', { frameWidth: 50, frameHeight: 67 });
+        this.load.image('katana', 'assets/katana.svg');
         this.load.spritesheet('powerups', 'assets/powerups.png', { frameWidth: 64, frameHeight: 64 });
         this.load.image('fireball', 'assets/fireball-small.png');
         this.load.tilemapTiledJSON('1', 'assets/level_01.json');
