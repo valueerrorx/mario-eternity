@@ -2,6 +2,8 @@
 let coins = 0;
 let coinText = null;
 let fireStatusText = null;
+let weatherText = null;
+let seasonText = null;
 let timerText = null;
 let timerPanel = null;
 let timerRing = null;
@@ -34,6 +36,22 @@ export function createHud(scene, lives, maxLives) {
     fireStatusText = scene.add.text(16, 56, 'Feuerblume: fehlt', { fontSize: '18px', fill: '#ffffff' });
     fireStatusText.setScrollFactor(0);
     fireStatusText.setDepth(100);
+
+    weatherText = scene.add.text(16, 104, 'Wetter: Sonne', {
+        fontSize: '18px',
+        fill: '#ffffff',
+        shadow: { offsetX: 1, offsetY: 1, color: '#172333', blur: 3, fill: true }
+    });
+    weatherText.setScrollFactor(0);
+    weatherText.setDepth(100);
+
+    seasonText = scene.add.text(16, 128, 'Jahreszeit: Frühling', {
+        fontSize: '16px',
+        fill: '#ffffff',
+        shadow: { offsetX: 1, offsetY: 1, color: '#172333', blur: 3, fill: true }
+    });
+    seasonText.setScrollFactor(0);
+    seasonText.setDepth(100);
 
     coinText = scene.add.text(16, 76, 'Coins: ' + coins, { fontSize: '24px', fill: '#ffffff' });
     coinText.setScrollFactor(0);
@@ -99,6 +117,18 @@ export function updateLifeHud(lives) {
 
 export function setFireStatus(text) {
     fireStatusText.setText(text);
+}
+
+export function setWeatherLabel(text) {
+    if (weatherText && weatherText.text !== text) {
+        weatherText.setText(text);
+    }
+}
+
+export function setSeasonLabel(text) {
+    if (seasonText && seasonText.text !== text) {
+        seasonText.setText(text);
+    }
 }
 
 export function showGameOver() {

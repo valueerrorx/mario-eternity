@@ -1,6 +1,6 @@
 // Level scene: wires player, world and hud, and owns the enemies.
-import { createWorld, updateWorld, getMap, getFloorLayer, bindAssetOverlap } from './world.js';
-import { createHud, updateHud, showGameOver } from './hud.js';
+import { createWorld, updateWorld, getMap, getFloorLayer, getWeather, getWeatherLabel, bindAssetOverlap } from './world.js';
+import { createHud, updateHud, setWeatherLabel, showGameOver } from './hud.js';
 import { createPlayer, updatePlayer, getPlayer, getLives, getMaxLives, loseLife, hitPlayer } from './player.js';
 
 const enemySpawns = [{ x: 700 }, { x: 1450 }];
@@ -8,6 +8,7 @@ let enemies = null;
 let bullets = null;
 let shells = null;
 let katanaThrows = null;
+let nextWindGust = 0;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -21,6 +22,7 @@ export class GameScene extends Phaser.Scene {
         bindAssetOverlap(this, getPlayer(), () => loseLife(this));
         createCombat(this);
         createHud(this, getLives(), getMaxLives());
+        setWeatherLabel(getWeatherLabel());
     }
 
     update(time, delta) {
@@ -35,13 +37,15 @@ export class GameScene extends Phaser.Scene {
 
         updateHud(delta);
         updateWorld(this, delta);
-        updateKoopaEnemies();
+        updateKoopaEnemies(this);
         updateKatanaThrows(time);
         updatePlayer(this, () => shootBullet(this), () => throwKatana(this));
+        updateWindGusts(this, delta);
     }
 }
 
 function createCombat(scene) {
+    nextWindGust = 0;
     enemies = scene.physics.add.group({
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
@@ -310,13 +314,23 @@ function updateKoopaShells() {
     });
 }
 
-function updateKoopaEnemies() {
+function updateKoopaEnemies(scene) {
     if (!enemies) {
         return;
     }
 
     enemies.getChildren().forEach(enemy => {
-        if (!enemy || !enemy.active || !enemy.isKoopa) {
+        if (!enemy || !enemy.active) {
+            return;
+        }
+
+        if (updateSnowFreeze(scene, enemy)) {
+            return;
+        }
+        if (!enemy.isKoopa) {
+            if (enemy.windPushUntil > scene.time.now) {
+                enemy.body.setVelocityX(enemy.windPushVelocity);
+            }
             return;
         }
 
@@ -332,10 +346,83 @@ function updateKoopaEnemies() {
             if (!groundTile || groundTile.index <= 0 || groundTile.pixelY !== enemy.platformY) {
                 enemy.direction *= -1;
             }
-            enemy.setVelocityX(enemy.direction * speed);
+            const velocityX = enemy.windPushUntil > scene.time.now
+                ? enemy.windPushVelocity
+                : enemy.direction * speed;
+            enemy.body.setVelocityX(velocityX);
         }
     });
     updateKoopaShells();
+}
+
+function updateSnowFreeze(scene, enemy) {
+    const now = scene.time.now;
+    if (getWeather() !== 'snow') {
+        if (enemy.weatherFrozen) {
+            enemy.weatherFrozen = false;
+            if (enemy.clearTint) {
+                enemy.clearTint();
+            } else {
+                enemy.setAlpha(1);
+            }
+        }
+        enemy.nextSnowFreezeAt = now + Phaser.Math.Between(2400, 4800);
+        return false;
+    }
+
+    if (!enemy.weatherFrozen && now >= (enemy.nextSnowFreezeAt || 0)) {
+        enemy.weatherFrozen = true;
+        enemy.frozenUntil = now + Phaser.Math.Between(800, 1500);
+        enemy.nextSnowFreezeAt = enemy.frozenUntil + Phaser.Math.Between(2400, 4800);
+    }
+    if (!enemy.weatherFrozen) {
+        return false;
+    }
+    if (now >= enemy.frozenUntil) {
+        enemy.weatherFrozen = false;
+        if (enemy.clearTint) {
+            enemy.clearTint();
+        } else {
+            enemy.setAlpha(1);
+        }
+        return false;
+    }
+
+    enemy.body.setVelocityX(0);
+    if (enemy.setTint) {
+        enemy.setTint(0xb9e8ff);
+    } else {
+        enemy.setAlpha(0.55);
+    }
+    return true;
+}
+
+function updateWindGusts(scene, delta) {
+    if (getWeather() !== 'wind') {
+        nextWindGust = 0;
+        return;
+    }
+    nextWindGust -= delta;
+    if (nextWindGust > 0) {
+        return;
+    }
+
+    nextWindGust = Phaser.Math.Between(1800, 3600);
+    const direction = Phaser.Math.Between(0, 1) === 0 ? -1 : 1;
+    const force = Phaser.Math.Between(150, 260);
+    const player = getPlayer();
+    if (player && player.body && player.active) {
+        player.windPush = direction * force;
+        player.windPushUntil = scene.time.now + 650;
+    }
+    if (enemies) {
+        enemies.getChildren().forEach(enemy => {
+            if (enemy && enemy.active && enemy.body && !enemy.weatherFrozen) {
+                enemy.windPushVelocity = enemy.body.velocity.x + direction * force;
+                enemy.windPushUntil = scene.time.now + 650;
+            }
+        });
+    }
 }
 
 function handlePlayerShellCollision(playerSprite, shell) {
