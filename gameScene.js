@@ -7,6 +7,7 @@ const enemySpawns = [{ x: 700 }, { x: 1450 }];
 let enemies = null;
 let bullets = null;
 let shells = null;
+let katanaThrows = null;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -35,7 +36,8 @@ export class GameScene extends Phaser.Scene {
         updateHud(delta);
         updateWorld(this, delta);
         updateKoopaEnemies();
-        updatePlayer(this, () => shootBullet(this));
+        updateKatanaThrows(time);
+        updatePlayer(this, () => shootBullet(this), () => throwKatana(this));
     }
 }
 
@@ -45,6 +47,7 @@ function createCombat(scene) {
         runChildUpdate: true
     });
     bullets = scene.physics.add.group();
+    katanaThrows = scene.physics.add.group();
     shells = scene.physics.add.group({
         classType: Phaser.Physics.Arcade.Sprite,
         runChildUpdate: true
@@ -72,6 +75,8 @@ function createCombat(scene) {
     scene.physics.add.collider(shells, getFloorLayer());
     scene.physics.add.collider(shells, enemies, shellHitsEnemy);
     scene.physics.add.overlap(bullets, enemies, bulletHitEnemy);
+    scene.physics.add.collider(katanaThrows, getFloorLayer(), consumeKatanaThrow);
+    scene.physics.add.overlap(katanaThrows, enemies, katanaHitEnemy);
 }
 
 function createKoopaTextures(scene) {
@@ -325,5 +330,49 @@ function bulletHitEnemy(bullet, enemy) {
         return;
     }
     bullet.disableBody(true, true);
+    enemy.disableBody(true, true);
+}
+
+function throwKatana(scene) {
+    const player = getPlayer();
+    const direction = player.facing === 'left' ? -1 : 1;
+    const katana = katanaThrows.get(player.x + direction * 30, player.y + 9, 'katana');
+    if (!katana) {
+        return;
+    }
+    katana.enableBody(true, player.x + direction * 30, player.y + 9, true, true);
+    katana.body.setAllowGravity(false);
+    katana.body.setVelocity(direction * 900, 0);
+    katana.setDisplaySize(38, 38);
+    katana.body.setSize(68, 24);
+    katana.setFlipX(direction < 0);
+    katana.setAngle(direction < 0 ? -45 : 45);
+    katana.setDepth(60);
+    katana.setData('expireAt', scene.time.now + 1400);
+}
+
+function updateKatanaThrows(time) {
+    if (!katanaThrows) {
+        return;
+    }
+    katanaThrows.getChildren().forEach(projectile => {
+        if (projectile.active && time >= projectile.getData('expireAt')) {
+            consumeKatanaThrow(projectile);
+        }
+    });
+}
+
+function consumeKatanaThrow(katana) {
+    if (!katana || !katana.active) {
+        return;
+    }
+    katana.disableBody(true, true);
+}
+
+function katanaHitEnemy(katana, enemy) {
+    if (!katana || !enemy || !katana.active || !enemy.active) {
+        return;
+    }
+    consumeKatanaThrow(katana);
     enemy.disableBody(true, true);
 }

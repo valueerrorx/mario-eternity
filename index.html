@@ -1,39 +1,39 @@
-  <html>
+<!DOCTYPE html>
+<html>
 <head>
-<title>Phaser Einführung</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<link rel=stylesheet href=index.css>
-<script src="phaser.min.js"></script>
+    <title>Phaser Einführung</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="index.css">
+    <script src="phaser.min.js"></script>
 </head>
 <body>
-<a href="http://phaser.io" target=blank><span class=header> Phaser HTML5 Framework - Version 4 </span></a>
-<div id=preview name=preview >
-<div id="game-settings">
-<button id="settings-toggle" class="settings-toggle" type="button" aria-label="Einstellungen öffnen" aria-controls="settings-panel" aria-expanded="false" title="Einstellungen">&#9881;</button>
-<section id="settings-panel" class="settings-panel" aria-label="Spieleinstellungen" hidden>
-    <h2>Einstellungen</h2>
-    <fieldset class="time-setting">
-        <legend>Tageszeit</legend>
-        <div class="time-options" role="group" aria-label="Tageszeit auswählen">
-            <button type="button" data-time-mode="auto" aria-pressed="true">Auto</button>
-            <button type="button" data-time-mode="day" aria-pressed="false">Tag</button>
-            <button type="button" data-time-mode="night" aria-pressed="false">Nacht</button>
-        </div>
-    </fieldset>
-    <label class="timer-setting" for="timer-toggle">
-        <span>Timer aktiv</span>
-        <input id="timer-toggle" type="checkbox" checked>
-        <span class="switch-track" aria-hidden="true"></span>
-    </label>
-    <button id="restart-game" class="restart-button" type="button"><span aria-hidden="true">&#8635;</span> Neu starten</button>
-</section>
+<a href="http://phaser.io" target="_blank"><span class="header">Phaser HTML5 Framework - Version 4</span></a>
+<div id="preview">
+    <div id="game-settings">
+        <button id="settings-toggle" class="settings-toggle" type="button" aria-label="Einstellungen öffnen" aria-controls="settings-panel" aria-expanded="false" title="Einstellungen">&#9881;</button>
+        <section id="settings-panel" class="settings-panel" aria-label="Spieleinstellungen" hidden>
+            <h2>Einstellungen</h2>
+            <fieldset class="time-setting">
+                <legend>Tageszeit</legend>
+                <div class="time-options" role="group" aria-label="Tageszeit auswählen">
+                    <button type="button" data-time-mode="auto" aria-pressed="true">Auto</button>
+                    <button type="button" data-time-mode="day" aria-pressed="false">Tag</button>
+                    <button type="button" data-time-mode="night" aria-pressed="false">Nacht</button>
+                </div>
+            </fieldset>
+            <label class="timer-setting" for="timer-toggle">
+                <span>Timer aktiv</span>
+                <input id="timer-toggle" type="checkbox" checked>
+                <span class="switch-track" aria-hidden="true"></span>
+            </label>
+            <button id="restart-game" class="restart-button" type="button"><span aria-hidden="true">&#8635;</span> Neu starten</button>
+        </section>
+    </div>
 </div>
+<div id="stuff">
+    <div class="main"><a href="http://labs.phaser.io/index.html" target="_blank">Phaser4<br>Examples</a></div>
+    <div class="main"><a href="#" onclick="location.reload();">reload<br><br></a></div>
 </div>
-<div id=stuff>
-<div class=main><a href="http://labs.phaser.io/index.html" target=blank> Phaser4<br>Examples </a></div>
-<div class="main"><a href="#" onclick="location.reload();" > reload <br><br></a></div>
-</div>
-
 <script type="module" src="main.js"></script>
 </body>
 </html>
