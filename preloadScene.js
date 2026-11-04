@@ -15,7 +15,7 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('katana', 'assets/katana.svg');
         this.load.spritesheet('powerups', 'assets/powerups.png', { frameWidth: 64, frameHeight: 64 });
         this.load.image('fireball', 'assets/fireball-small.png');
-        this.load.tilemapTiledJSON('1', 'assets/level_01.json');
+        this.load.tilemapTiledJSON('1', 'assets/level_02.json');
         this.load.image('tileset', 'assets/tileset.png');
     }
 
