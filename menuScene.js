@@ -33,7 +33,7 @@ export class MenuScene extends Phaser.Scene {
                 .setStrokeStyle(4, 0xf8d14f, 1)
                 .setInteractive({ useHandCursor: true });
 
-            this.add.text(x, y, 'START GAME', {
+            this.add.text(x, y, 'SPIEL STARTEN', {
                 fontFamily: 'Arial',
                 fontSize: '32px',
                 color: '#ffffff',
