@@ -1,5 +1,5 @@
 // Mario movement, powerups and the life counter.
-import { getMap } from './world.js';
+import { getMap, getWeather } from './world.js';
 import { setFireStatus, updateLifeHud, showGameOver } from './hud.js';
 
 const spawn = { x: 330, y: 200 };
@@ -97,18 +97,27 @@ export function createPlayer(scene) {
 
 export function updatePlayer(scene, onShoot, onThrowKatana) {
     const walkAnimation = player.texture.key === 'samuraiMario' ? 'samuraiWalk' : 'walk';
+    const isRaining = getWeather() === 'rain';
+    const windPush = player.windPushUntil > scene.time.now ? player.windPush : 0;
     if (wasd.left.isDown) {
-        player.setVelocityX(-player.speed);
+        setHorizontalVelocity(-player.speed + windPush, isRaining);
         player.setFlipX(false);
         player.facing = 'left';
         player.anims.play(walkAnimation, true);
     } else if (wasd.right.isDown) {
-        player.setVelocityX(player.speed);
+        setHorizontalVelocity(player.speed + windPush, isRaining);
         player.setFlipX(true);
         player.facing = 'right';
         player.anims.play(walkAnimation, true);
     } else {
-        player.setVelocityX(0);
+        if (windPush) {
+            player.setVelocityX(windPush + (isRaining ? player.body.velocity.x * 0.97 : 0));
+        } else if (isRaining) {
+            const slidingVelocity = player.body.velocity.x * 0.97;
+            player.setVelocityX(Math.abs(slidingVelocity) < 8 ? 0 : slidingVelocity);
+        } else {
+            player.setVelocityX(0);
+        }
         player.setFrame(2);
     }
 
@@ -137,6 +146,14 @@ export function updatePlayer(scene, onShoot, onThrowKatana) {
     if (player.y > level.heightInPixels + 80 && !player.invulnerable) {
         loseLife(scene);
     }
+}
+
+function setHorizontalVelocity(targetVelocity, isRaining) {
+    if (!isRaining) {
+        player.setVelocityX(targetVelocity);
+        return;
+    }
+    player.setVelocityX(Phaser.Math.Linear(player.body.velocity.x, targetVelocity, 0.16));
 }
 
 export function loseLife(scene) {
