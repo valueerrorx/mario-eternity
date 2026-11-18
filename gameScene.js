@@ -267,7 +267,7 @@ function createDetachedShell(enemy) {
     shell.setActive(true);
     shell.setVisible(true);
     shell.setDepth(48);
-    shell.setScale(1.5);
+    shell.setScale(2.25);
     shell.setVelocity(0, 0);
     shell.body.setAllowGravity(false);
     shell.body.setSize(45, 33);
@@ -502,7 +502,7 @@ function spawnEnemies(scene) {
         enemy.setActive(true);
         enemy.setVisible(true);
         enemy.setDepth(45);
-        enemy.setScale(1.5);
+        enemy.setScale(2.25);
         enemy.body.setAllowGravity(false);
         enemy.setCollideWorldBounds(false);
         enemy.setBounce(0, 0);
