@@ -10,7 +10,6 @@ let timerRing = null;
 let timerSeconds = 300;
 const timerDuration = 300;
 let timerActive = true;
-let timerEnabled = true;
 let gameOverShown = false;
 let hearts = [];
 const gameOverTaunts = [
@@ -24,9 +23,9 @@ export function createHud(scene, lives, maxLives) {
     coins = 0;
     timerSeconds = 300;
     timerActive = true;
-    timerEnabled = document.getElementById('timer-toggle').checked;
     hearts = [];
     gameOverShown = false;
+    setControlVisibility(true, true);
 
     const startX = scene.scale.width - 26;
     for (let i = 0; i < maxLives; i++) {
@@ -88,12 +87,11 @@ export function createHud(scene, lives, maxLives) {
         fontStyle: 'bold'
     });
     timerPanel.add(timerText);
-    timerPanel.setVisible(timerEnabled);
     updateTimerRing();
 }
 
 export function updateHud(delta) {
-    if (timerActive && timerEnabled) {
+    if (timerActive) {
         timerSeconds -= delta / 1000;
         if (timerSeconds <= 0) {
             timerSeconds = 0;
@@ -136,6 +134,7 @@ export function showGameOver(scene) {
         return;
     }
     gameOverShown = true;
+    setControlVisibility(false, false);
     scene.physics.world.pause();
 
     scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x101820, 1)
@@ -185,14 +184,55 @@ export function showGameOver(scene) {
     retryButton.on('pointerdown', () => scene.scene.restart());
 }
 
-export function setupSettings(onTimeMode) {
+export function setControlVisibility(settingsVisible, pauseVisible) {
     const settingsToggle = document.getElementById('settings-toggle');
     const settingsPanel = document.getElementById('settings-panel');
+    const pauseToggle = document.getElementById('pause-toggle');
+    if (!settingsToggle || !settingsPanel || !pauseToggle) {
+        return;
+    }
+    settingsToggle.hidden = !settingsVisible;
+    pauseToggle.hidden = !pauseVisible;
+    if (!settingsVisible) {
+        settingsPanel.hidden = true;
+        settingsToggle.setAttribute('aria-expanded', 'false');
+        settingsToggle.setAttribute('aria-label', 'Einstellungen öffnen');
+    }
+    if (!pauseVisible) {
+        pauseToggle.textContent = '\u2759\u2759';
+        pauseToggle.setAttribute('aria-pressed', 'false');
+        pauseToggle.setAttribute('aria-label', 'Spiel pausieren');
+        pauseToggle.title = 'Spiel pausieren';
+    }
+}
+
+export function setupSettings(onTimeMode, game) {
+    const settingsToggle = document.getElementById('settings-toggle');
+    const settingsPanel = document.getElementById('settings-panel');
+    const pauseToggle = document.getElementById('pause-toggle');
 
     settingsToggle.addEventListener('click', () => {
         settingsPanel.hidden = !settingsPanel.hidden;
         settingsToggle.setAttribute('aria-expanded', String(!settingsPanel.hidden));
         settingsToggle.setAttribute('aria-label', settingsPanel.hidden ? 'Einstellungen öffnen' : 'Einstellungen schließen');
+    });
+
+    pauseToggle.addEventListener('click', () => {
+        if (!game || (!game.scene.isActive('GameScene') && !game.scene.isPaused('GameScene'))) {
+            return;
+        }
+
+        const paused = game.scene.isPaused('GameScene');
+        if (paused) {
+            game.scene.resume('GameScene');
+        } else {
+            game.scene.pause('GameScene');
+        }
+
+        pauseToggle.textContent = paused ? '\u2759\u2759' : '\u25B6';
+        pauseToggle.setAttribute('aria-pressed', String(!paused));
+        pauseToggle.setAttribute('aria-label', paused ? 'Spiel pausieren' : 'Spiel fortsetzen');
+        pauseToggle.title = paused ? 'Spiel pausieren' : 'Spiel fortsetzen';
     });
 
     document.querySelectorAll('[data-time-mode]').forEach(button => {
@@ -202,13 +242,6 @@ export function setupSettings(onTimeMode) {
                 option.setAttribute('aria-pressed', String(option === button));
             });
         });
-    });
-
-    document.getElementById('timer-toggle').addEventListener('change', event => {
-        timerEnabled = event.target.checked;
-        if (timerPanel) {
-            timerPanel.setVisible(timerEnabled);
-        }
     });
 
     document.getElementById('restart-game').addEventListener('click', () => window.location.reload());
