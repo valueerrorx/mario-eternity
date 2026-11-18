@@ -272,6 +272,7 @@ function createDetachedShell(enemy) {
     shell.body.setAllowGravity(false);
     shell.body.setSize(45, 33);
     shell.body.setOffset(0, 0);
+    shell.platformY = enemy.platformY;
     shell.direction = enemy.direction || -1;
     shell.setFlipX(shell.direction > 0);
     return shell;
@@ -297,7 +298,8 @@ function updateKoopaShells() {
         shell.direction = dir;
         shell.setFlipX(dir > 0);
         const frontX = shell.x + (dir * 18);
-        const frontTile = getFloorLayer() && getFloorLayer().getTileAtWorldXY(frontX, shell.y + 10);
+        const probeY = (shell.platformY !== undefined ? shell.platformY : shell.body.bottom) + 1;
+        const frontTile = getFloorLayer() && getFloorLayer().getTileAtWorldXY(frontX, probeY);
         if (!frontTile || frontTile.index <= 0) {
             shell.direction *= -1;
             shell.setVelocityX(shell.direction * 420);
@@ -324,9 +326,6 @@ function updateKoopaEnemies(scene) {
             return;
         }
         if (!enemy.isKoopa) {
-            if (enemy.windPushUntil > scene.time.now) {
-                enemy.body.setVelocityX(enemy.windPushVelocity);
-            }
             return;
         }
 
@@ -342,10 +341,7 @@ function updateKoopaEnemies(scene) {
             if (!groundTile || groundTile.index <= 0 || groundTile.pixelY !== enemy.platformY) {
                 enemy.direction *= -1;
             }
-            const velocityX = enemy.windPushUntil > scene.time.now
-                ? enemy.windPushVelocity
-                : enemy.direction * speed;
-            enemy.body.setVelocityX(velocityX);
+            enemy.body.setVelocityX(enemy.direction * speed);
         }
     });
     updateKoopaShells();
@@ -410,14 +406,6 @@ function updateWindGusts(scene, delta) {
     if (player && player.body && player.active) {
         player.windPush = direction * force;
         player.windPushUntil = scene.time.now + 650;
-    }
-    if (enemies) {
-        enemies.getChildren().forEach(enemy => {
-            if (enemy && enemy.active && enemy.body && !enemy.weatherFrozen) {
-                enemy.windPushVelocity = enemy.body.velocity.x + direction * force;
-                enemy.windPushUntil = scene.time.now + 650;
-            }
-        });
     }
 }
 
