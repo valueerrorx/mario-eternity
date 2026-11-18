@@ -1,6 +1,7 @@
 // Boots Phaser and connects the settings panel to the sky.
 import { PreloadScene } from './preloadScene.js';
 import { MenuScene } from './menuScene.js';
+import { FinishScene } from './finishScene.js';
 import { GameScene } from './gameScene.js';
 import { setupSettings } from './hud.js';
 import { setTimeMode } from './world.js';
@@ -16,7 +17,7 @@ const config = {
             gravity: { y: 1800 }
         }
     },
-    scene: [PreloadScene, MenuScene, GameScene]
+    scene: [PreloadScene, MenuScene, GameScene, FinishScene]
 };
 
 setupSettings(setTimeMode);

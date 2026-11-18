@@ -30,6 +30,7 @@ const weatherNames = {
     snow: 'Schnee',
     wind: 'Wind'
 };
+const finishTileIndices = new Set([9, 10, 25, 26]);
 
 export function getMap() {
     return map;
@@ -90,13 +91,17 @@ export function updateWorld(scene, delta) {
     updateWeather(scene, delta);
 }
 
-export function bindAssetOverlap(scene, playerSprite, onHazard) {
+export function bindAssetOverlap(scene, playerSprite, onHazard, onFinish) {
     scene.physics.add.overlap(playerSprite, assetLayer, (sprite, tile) => {
         if (!tile) {
             return;
         }
         if (isHazardTile(tile.index)) {
             onHazard();
+            return;
+        }
+        if (finishTileIndices.has(tile.index)) {
+            onFinish();
             return;
         }
         assetLayer.removeTileAt(tile.x, tile.y);

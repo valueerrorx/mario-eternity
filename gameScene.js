@@ -16,10 +16,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        let finishStarted = false;
         createWorld(this);
         createPlayer(this);
         this.physics.add.collider(getPlayer(), getFloorLayer());
-        bindAssetOverlap(this, getPlayer(), () => loseLife(this));
+        bindAssetOverlap(this, getPlayer(), () => loseLife(this), () => {
+            if (finishStarted) {
+                return;
+            }
+            finishStarted = true;
+            this.scene.start('FinishScene');
+        });
         createCombat(this);
         createHud(this, getLives(), getMaxLives());
         setWeatherLabel(getWeatherLabel());
