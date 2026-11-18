@@ -171,7 +171,7 @@ export function loseLife(scene) {
 
     if (lives <= 0) {
         player.disableBody(true, true);
-        showGameOver();
+        showGameOver(scene);
         return;
     }
 
@@ -191,7 +191,7 @@ export function hitPlayer(scene, playerSprite) {
 
     if (lives <= 0) {
         playerSprite.disableBody(true, true);
-        showGameOver();
+        showGameOver(scene);
         return;
     }
 

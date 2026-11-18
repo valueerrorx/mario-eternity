@@ -27,11 +27,7 @@ export class GameScene extends Phaser.Scene {
 
     update(time, delta) {
         if (getLives() <= 0) {
-            showGameOver();
-            const sprite = getPlayer();
-            if (sprite) {
-                sprite.setVelocity(0, 0);
-            }
+            showGameOver(this);
             return;
         }
 

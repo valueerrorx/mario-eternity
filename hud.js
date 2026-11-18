@@ -11,8 +11,14 @@ let timerSeconds = 300;
 const timerDuration = 300;
 let timerActive = true;
 let timerEnabled = true;
-let gameOverText = null;
+let gameOverShown = false;
 let hearts = [];
+const gameOverTaunts = [
+    'Even the spikes saw that coming.',
+    'The Koopas barely had to try.',
+    'That fall had no style points.',
+    'Maybe next time, watch your step.'
+];
 
 export function createHud(scene, lives, maxLives) {
     coins = 0;
@@ -20,6 +26,7 @@ export function createHud(scene, lives, maxLives) {
     timerActive = true;
     timerEnabled = document.getElementById('timer-toggle').checked;
     hearts = [];
+    gameOverShown = false;
 
     const startX = scene.scale.width - 26;
     for (let i = 0; i < maxLives; i++) {
@@ -83,13 +90,6 @@ export function createHud(scene, lives, maxLives) {
     timerPanel.add(timerText);
     timerPanel.setVisible(timerEnabled);
     updateTimerRing();
-
-    gameOverText = scene.add.text(scene.scale.width / 2, scene.scale.height / 2, 'GAME OVER', {
-        fontSize: '52px',
-        color: '#ffffff',
-        fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(200);
-    gameOverText.setVisible(false);
 }
 
 export function updateHud(delta) {
@@ -131,10 +131,58 @@ export function setSeasonLabel(text) {
     }
 }
 
-export function showGameOver() {
-    if (gameOverText) {
-        gameOverText.setVisible(true);
+export function showGameOver(scene) {
+    if (gameOverShown) {
+        return;
     }
+    gameOverShown = true;
+    scene.physics.world.pause();
+
+    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x101820, 1)
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(200);
+
+    const centerX = scene.scale.width / 2;
+    const centerY = scene.scale.height / 2;
+    const panel = scene.add.graphics().setScrollFactor(0).setDepth(201);
+    panel.fillStyle(0x1b2b32, 0.98);
+    panel.fillRoundedRect(centerX - 190, centerY - 112, 380, 224, 18);
+    panel.lineStyle(3, 0xffab2c, 1);
+    panel.strokeRoundedRect(centerX - 190, centerY - 112, 380, 224, 18);
+
+    scene.add.text(centerX, centerY - 54, 'GAME OVER', {
+        fontFamily: 'Arial Black',
+        fontSize: '42px',
+        color: '#fff1c6',
+        stroke: '#101820',
+        strokeThickness: 5,
+        align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(202);
+
+    scene.add.text(centerX, centerY + 2, Phaser.Utils.Array.GetRandom(gameOverTaunts), {
+        fontFamily: 'Trebuchet MS, sans-serif',
+        fontSize: '18px',
+        color: '#c5d0d3',
+        align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(202);
+
+    const retryButton = scene.add.rectangle(centerX, centerY + 62, 180, 48, 0xffab2c)
+        .setScrollFactor(0)
+        .setDepth(202)
+        .setStrokeStyle(2, 0xffd66b, 1)
+        .setInteractive({ useHandCursor: true });
+    scene.add.text(centerX, centerY + 62, 'RETRY', {
+        fontFamily: 'Arial',
+        fontSize: '22px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+        align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(203);
+
+    retryButton.on('pointerover', () => retryButton.setFillStyle(0x0d9e91));
+    retryButton.on('pointerout', () => retryButton.setFillStyle(0xffab2c));
+    retryButton.on('pointerdown', () => scene.scene.restart());
 }
 
 export function setupSettings(onTimeMode) {
