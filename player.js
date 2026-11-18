@@ -9,6 +9,7 @@ let lives = 1;
 let jumpCount = 0;
 let lastShot = 0;
 let player = null;
+let ffp2Mask = null;
 let wasd = null;
 let shootKey = null;
 let katanaKey = null;
@@ -39,6 +40,9 @@ export function createPlayer(scene) {
     player.invulnerable = false;
     player.hasFireFlower = false;
     player.hasKatana = false;
+    createFfp2MaskTexture(scene);
+    ffp2Mask = scene.add.image(player.x, player.y, 'mario_ffp2_mask')
+        .setDepth(51);
 
     const heartPickup = scene.add.text(220, 350, '❤', {
         fontSize: '28px',
@@ -146,6 +150,40 @@ export function updatePlayer(scene, onShoot, onThrowKatana) {
     if (player.y > level.heightInPixels + 80 && !player.invulnerable) {
         loseLife(scene);
     }
+
+    ffp2Mask.setPosition(player.x, player.y);
+    ffp2Mask.setFlipX(player.flipX);
+    ffp2Mask.setVisible(player.active && player.visible);
+}
+
+function createFfp2MaskTexture(scene) {
+    if (scene.textures.exists('mario_ffp2_mask')) {
+        return;
+    }
+
+    const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
+    graphics.lineStyle(1.5, 0x9bcbd2, 1);
+    graphics.lineBetween(20, 32, 17, 30);
+    graphics.lineBetween(32, 32, 35, 30);
+    graphics.fillStyle(0xe5f4f4, 1);
+    graphics.fillPoints([
+        { x: 20, y: 30 },
+        { x: 26, y: 28 },
+        { x: 33, y: 30 },
+        { x: 32, y: 37 },
+        { x: 26, y: 39 },
+        { x: 20, y: 37 }
+    ], true);
+    graphics.lineStyle(1, 0x8dbdc5, 1);
+    graphics.lineBetween(20, 30, 26, 28);
+    graphics.lineBetween(26, 28, 33, 30);
+    graphics.lineBetween(33, 30, 32, 37);
+    graphics.lineBetween(32, 37, 26, 39);
+    graphics.lineBetween(26, 39, 20, 37);
+    graphics.lineBetween(20, 37, 20, 30);
+    graphics.lineBetween(26, 29, 26, 38);
+    graphics.generateTexture('mario_ffp2_mask', 50, 67);
+    graphics.destroy();
 }
 
 function setHorizontalVelocity(targetVelocity, isRaining) {
