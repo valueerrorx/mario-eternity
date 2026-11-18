@@ -3,10 +3,11 @@ import { getMap, getWeather } from './world.js';
 import { setFireStatus, updateLifeHud, showGameOver } from './hud.js';
 
 const spawn = { x: 330, y: 200 };
-const maxLives = 2;
+const maxLives = 5;
+const startLives = 2;
 const shotCooldown = 200;
 const maxFallSpeed = 900;
-let lives = 1;
+let lives = startLives;
 let jumpCount = 0;
 let lastShot = 0;
 let player = null;
@@ -28,7 +29,7 @@ export function getMaxLives() {
 }
 
 export function createPlayer(scene) {
-    lives = 1;
+    lives = startLives;
     jumpCount = 0;
     lastShot = 0;
 
@@ -262,7 +263,9 @@ function collectHeart(playerSprite, heartPickup) {
     }
     lives = Math.min(maxLives, lives + 1);
     updateLifeHud(lives);
-    heartPickup.disableBody(true, true);
+    if (heartPickup.body) {
+        heartPickup.body.enable = false;
+    }
     heartPickup.setVisible(false);
 }
 
