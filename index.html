@@ -10,6 +10,7 @@
 <a href="http://phaser.io" target="_blank"><span class="header">Phaser HTML5 Framework - Version 4</span></a>
 <div id="preview">
     <div id="game-settings">
+        <button id="pause-toggle" class="settings-toggle pause-toggle" type="button" aria-label="Spiel pausieren" aria-pressed="false" title="Spiel pausieren" hidden>&#10074;&#10074;</button>
         <button id="settings-toggle" class="settings-toggle" type="button" aria-label="Einstellungen öffnen" aria-controls="settings-panel" aria-expanded="false" title="Einstellungen">&#9881;</button>
         <section id="settings-panel" class="settings-panel" aria-label="Spieleinstellungen" hidden>
             <h2>Einstellungen</h2>
@@ -21,11 +22,6 @@
                     <button type="button" data-time-mode="night" aria-pressed="false">Nacht</button>
                 </div>
             </fieldset>
-            <label class="timer-setting" for="timer-toggle">
-                <span>Timer aktiv</span>
-                <input id="timer-toggle" type="checkbox" checked>
-                <span class="switch-track" aria-hidden="true"></span>
-            </label>
             <button id="restart-game" class="restart-button" type="button"><span aria-hidden="true">&#8635;</span> Neu starten</button>
         </section>
     </div>

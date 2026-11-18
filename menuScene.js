@@ -1,9 +1,12 @@
+import { setControlVisibility } from './hud.js';
+
 export class MenuScene extends Phaser.Scene {
     constructor() {
         super('MenuScene');
     }
 
     create() {
+        setControlVisibility(true, false);
         this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'clouds').setOrigin(0, 0);
         this.add.tileSprite(0, this.scale.height - 180, this.scale.width, 220, 'green').setOrigin(0, 0);
         this.add.tileSprite(0, this.scale.height - 100, this.scale.width, 160, 'darkgreen').setOrigin(0, 0);

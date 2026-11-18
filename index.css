@@ -102,6 +102,28 @@ a {color: #eee; text-decoration:none;}
     background: #245b4d;
 }
 
+.pause-toggle {
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+.pause-toggle:hover {
+    transform: none;
+}
+
+.pause-toggle:focus,
+.pause-toggle:focus-visible {
+    outline: none;
+}
+
+.pause-toggle[hidden] {
+    display: none;
+}
+
+.settings-toggle[hidden] {
+    display: none;
+}
+
 .settings-panel {
     width: 248px;
     padding: 16px;
@@ -164,60 +186,7 @@ a {color: #eee; text-decoration:none;}
     color: #fff5ce;
 }
 
-.timer-setting {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 46px;
-    margin: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    color: #e5e9e5;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.timer-setting input {
-    position: absolute;
-    right: 0;
-    width: 42px;
-    height: 24px;
-    margin: 0;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.switch-track {
-    width: 40px;
-    height: 22px;
-    border: 1px solid #72808a;
-    border-radius: 11px;
-    background: #34414b;
-    transition: background-color 160ms ease;
-}
-
-.switch-track::after {
-    display: block;
-    width: 16px;
-    height: 16px;
-    margin: 2px;
-    border-radius: 50%;
-    background: #f4f0df;
-    content: '';
-    transition: transform 160ms ease;
-}
-
-.timer-setting input:checked + .switch-track {
-    border-color: #61b786;
-    background: #31715a;
-}
-
-.timer-setting input:checked + .switch-track::after {
-    transform: translateX(18px);
-}
-
-.timer-setting input:focus-visible + .switch-track,
-.settings-toggle:focus-visible,
+.settings-toggle:not(.pause-toggle):focus-visible,
 .time-options button:focus-visible,
 .restart-button:focus-visible {
     outline: 2px solid #ffe28a;

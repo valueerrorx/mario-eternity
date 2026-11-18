@@ -19,5 +19,5 @@ const config = {
     scene: [PreloadScene, MenuScene, GameScene]
 };
 
-setupSettings(setTimeMode);
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+setupSettings(setTimeMode, game);
