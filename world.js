@@ -40,6 +40,20 @@ export function getFloorLayer() {
     return floorLayer;
 }
 
+export function getGroundYAtX(x) {
+    if (!floorLayer || !map) {
+        return null;
+    }
+
+    for (let y = 0; y < map.heightInPixels; y += map.tileHeight) {
+        const tile = floorLayer.getTileAtWorldXY(x, y + 1);
+        if (tile && tile.index > 0) {
+            return tile.pixelY - 33;
+        }
+    }
+    return null;
+}
+
 export function getWeather() {
     return weather ? weather.type : 'sunny';
 }

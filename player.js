@@ -1,8 +1,8 @@
 // Mario movement, powerups and the life counter.
-import { getMap, getWeather } from './world.js';
+import { getMap, getWeather, getGroundYAtX } from './world.js';
 import { setFireStatus, updateLifeHud, showGameOver } from './hud.js';
 
-const spawn = { x: 330, y: 200 };
+const spawn = { x: 330 };
 const maxLives = 5;
 const startLives = 2;
 const shotCooldown = 200;
@@ -33,7 +33,8 @@ export function createPlayer(scene) {
     jumpCount = 0;
     lastShot = 0;
 
-    player = scene.physics.add.sprite(spawn.x, spawn.y, 'mario');
+    const groundY = getGroundYAtX(spawn.x);
+    player = scene.physics.add.sprite(spawn.x, groundY ?? 200, 'mario');
     player.setCircle(28, -2, 8);
     player.body.setMaxVelocityY(maxFallSpeed);
     player.setCollideWorldBounds(false);
@@ -239,22 +240,25 @@ export function hitPlayer(scene, playerSprite) {
     playerSprite.invulnerable = true;
     playerSprite.setTint(0xffb3b3);
     playerSprite.setVelocity(0, 0);
-    playerSprite.setPosition(spawn.x, spawn.y);
+    respawnPlayer(playerSprite);
     scene.time.delayedCall(1000, () => {
         playerSprite.clearTint();
         playerSprite.invulnerable = false;
     });
 }
 
-function respawnPlayer() {
+function respawnPlayer(target = player) {
     const level = getMap();
-    if (!player || !level) {
+    if (!target || !level) {
         return;
     }
     const safeX = Phaser.Math.Clamp(spawn.x, 40, level.widthInPixels - 40);
-    const safeY = Phaser.Math.Clamp(spawn.y, 80, level.heightInPixels - 80);
-    player.setPosition(safeX, safeY);
-    player.setVelocity(0, 0);
+    const groundY = getGroundYAtX(safeX);
+    const safeY = groundY === null
+        ? Phaser.Math.Clamp(level.heightInPixels - 80, 80, level.heightInPixels - 80)
+        : groundY;
+    target.setPosition(safeX, safeY);
+    target.setVelocity(0, 0);
 }
 
 function collectHeart(playerSprite, heartPickup) {
