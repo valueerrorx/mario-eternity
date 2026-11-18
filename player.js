@@ -5,6 +5,7 @@ import { setFireStatus, updateLifeHud, showGameOver } from './hud.js';
 const spawn = { x: 330, y: 200 };
 const maxLives = 2;
 const shotCooldown = 200;
+const maxFallSpeed = 900;
 let lives = 1;
 let jumpCount = 0;
 let lastShot = 0;
@@ -32,6 +33,7 @@ export function createPlayer(scene) {
 
     player = scene.physics.add.sprite(spawn.x, spawn.y, 'mario');
     player.setCircle(28, -2, 8);
+    player.body.setMaxVelocityY(maxFallSpeed);
     player.setCollideWorldBounds(false);
     scene.physics.world.setBoundsCollision(true, true, true, false);
     player.speed = 400;
