@@ -23,6 +23,7 @@ export class GameScene extends Phaser.Scene {
         createCombat(this);
         createHud(this, getLives(), getMaxLives());
         setWeatherLabel(getWeatherLabel());
+        addEasterEgg(this);
     }
 
     update(time, delta) {
@@ -38,6 +39,34 @@ export class GameScene extends Phaser.Scene {
         updatePlayer(this, () => shootBullet(this), () => throwKatana(this));
         updateWindGusts(this, delta);
     }
+}
+
+function addEasterEgg(scene) {
+    const message = scene.add.text(scene.scale.width / 2, scene.scale.height / 2, 'Koopa says: thanks for playing!', {
+        fontFamily: 'Trebuchet MS, sans-serif',
+        fontSize: '24px',
+        color: '#fff1c6',
+        stroke: '#172333',
+        strokeThickness: 5,
+        align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(150).setVisible(false);
+    const secretCode = 'KOOPA';
+    let typedCode = '';
+    let found = false;
+
+    // Easter egg: type KOOPA to reveal the hidden message.
+    scene.input.keyboard.on('keydown', event => {
+        if (found || event.key.length !== 1) {
+            return;
+        }
+
+        typedCode = (typedCode + event.key.toUpperCase()).slice(-secretCode.length);
+        if (typedCode === secretCode) {
+            found = true;
+            message.setVisible(true);
+            scene.time.delayedCall(2500, () => message.setVisible(false));
+        }
+    });
 }
 
 function createCombat(scene) {

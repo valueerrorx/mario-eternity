@@ -63,8 +63,8 @@ export function createWorld(scene) {
     green = scene.add.tileSprite(0, map.heightInPixels - 640, map.widthInPixels, map.heightInPixels, 'green').setOrigin(0, 0);
     darkgreen = scene.add.tileSprite(0, map.heightInPixels - 480, map.widthInPixels, map.heightInPixels, 'darkgreen').setOrigin(0, 0);
     createSkyEffects(scene, map.widthInPixels, map.heightInPixels);
-    createWeatherEffects(scene);
-    createSeasonEffects(scene);
+    createWeatherEffects(scene, map.widthInPixels, map.heightInPixels);
+    createSeasonEffects(scene, map.widthInPixels, map.heightInPixels);
     season = { index: 0, elapsed: 0 };
     weather = {
         type: pickWeather(),
@@ -161,47 +161,50 @@ function updateDayNight(scene, delta) {
     starField.setAlpha(night * (0.78 + Math.sin(scene.time.now * 0.003) * 0.16));
 }
 
-function createWeatherEffects(scene) {
+function createWeatherEffects(scene, worldWidth, worldHeight) {
     weatherEffects = {
-        overlay: scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x172333, 1)
-            .setOrigin(0, 0).setScrollFactor(0).setDepth(49).setAlpha(0),
+        overlay: scene.add.rectangle(0, 0, worldWidth, worldHeight, 0x172333, 1)
+            .setOrigin(0, 0).setDepth(49).setAlpha(0),
         rain: [],
         snow: [],
-        wind: []
+        wind: [],
+        worldWidth,
+        worldHeight
     };
 
-    for (let index = 0; index < 48; index++) {
+    const worldAreaScale = worldWidth * worldHeight / (scene.scale.width * scene.scale.height);
+    for (let index = 0; index < Math.ceil(48 * worldAreaScale); index++) {
         const drop = scene.add.rectangle(
-            Phaser.Math.Between(0, scene.scale.width),
-            Phaser.Math.Between(0, scene.scale.height),
+            Phaser.Math.Between(0, worldWidth),
+            Phaser.Math.Between(0, worldHeight),
             2,
             14,
             0xd8efff,
             0.38
-        ).setScrollFactor(0).setDepth(80).setAngle(15);
+        ).setDepth(80).setAngle(15);
         weatherEffects.rain.push(drop);
     }
 
-    for (let index = 0; index < 24; index++) {
+    for (let index = 0; index < Math.ceil(24 * worldAreaScale); index++) {
         const flake = scene.add.circle(
-            Phaser.Math.Between(0, scene.scale.width),
-            Phaser.Math.Between(0, scene.scale.height),
+            Phaser.Math.Between(0, worldWidth),
+            Phaser.Math.Between(0, worldHeight),
             Phaser.Math.Between(1, 3),
             0xffffff,
             0.68
-        ).setScrollFactor(0).setDepth(80);
+        ).setDepth(80);
         weatherEffects.snow.push(flake);
     }
 
-    for (let index = 0; index < 9; index++) {
+    for (let index = 0; index < Math.ceil(9 * worldAreaScale); index++) {
         const streak = scene.add.rectangle(
-            Phaser.Math.Between(0, scene.scale.width),
-            Phaser.Math.Between(20, scene.scale.height - 20),
+            Phaser.Math.Between(0, worldWidth),
+            Phaser.Math.Between(20, worldHeight - 20),
             Phaser.Math.Between(18, 38),
             2,
             0xf3f6e8,
             0.25
-        ).setScrollFactor(0).setDepth(80);
+        ).setDepth(80);
         weatherEffects.wind.push(streak);
     }
 }
@@ -236,9 +239,12 @@ function updateWeather(scene, delta) {
         if (weather.type === 'rain') {
             drop.x -= delta * 0.12;
             drop.y += delta * 0.72;
-            if (drop.y > scene.scale.height + 16) {
+            if (drop.y > weatherEffects.worldHeight + 16) {
                 drop.y = -16;
-                drop.x = Phaser.Math.Between(0, scene.scale.width);
+                drop.x = Phaser.Math.Between(0, weatherEffects.worldWidth);
+            }
+            if (drop.x < -16) {
+                drop.x = weatherEffects.worldWidth + 16;
             }
         }
     });
@@ -247,9 +253,14 @@ function updateWeather(scene, delta) {
         if (weather.type === 'snow') {
             flake.y += delta * 0.035;
             flake.x += Math.sin((scene.time.now + flake.y * 8) * 0.001) * delta * 0.012;
-            if (flake.y > scene.scale.height + 4) {
+            if (flake.y > weatherEffects.worldHeight + 4) {
                 flake.y = -4;
-                flake.x = Phaser.Math.Between(0, scene.scale.width);
+                flake.x = Phaser.Math.Between(0, weatherEffects.worldWidth);
+            }
+            if (flake.x < -4) {
+                flake.x = weatherEffects.worldWidth + 4;
+            } else if (flake.x > weatherEffects.worldWidth + 4) {
+                flake.x = -4;
             }
         }
     });
@@ -258,12 +269,12 @@ function updateWeather(scene, delta) {
         if (weather.type === 'wind') {
             const direction = Math.sin(scene.time.now * 0.0007) >= 0 ? 1 : -1;
             streak.x += delta * 0.24 * direction;
-            if (streak.x > scene.scale.width + 40) {
+            if (streak.x > weatherEffects.worldWidth + 40) {
                 streak.x = -40;
-                streak.y = Phaser.Math.Between(20, scene.scale.height - 20);
+                streak.y = Phaser.Math.Between(20, weatherEffects.worldHeight - 20);
             } else if (streak.x < -40) {
-                streak.x = scene.scale.width + 40;
-                streak.y = Phaser.Math.Between(20, scene.scale.height - 20);
+                streak.x = weatherEffects.worldWidth + 40;
+                streak.y = Phaser.Math.Between(20, weatherEffects.worldHeight - 20);
             }
         }
     });
@@ -294,22 +305,25 @@ function updateSeason(scene, delta) {
     }
 }
 
-function createSeasonEffects(scene) {
+function createSeasonEffects(scene, worldWidth, worldHeight) {
     seasonEffects = {
-        overlay: scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0xffffff, 1)
-            .setOrigin(0, 0).setScrollFactor(0).setDepth(48).setAlpha(0),
-        particles: []
+        overlay: scene.add.rectangle(0, 0, worldWidth, worldHeight, 0xffffff, 1)
+            .setOrigin(0, 0).setDepth(48).setAlpha(0),
+        particles: [],
+        worldWidth,
+        worldHeight
     };
 
-    for (let index = 0; index < 18; index++) {
+    const worldAreaScale = worldWidth * worldHeight / (scene.scale.width * scene.scale.height);
+    for (let index = 0; index < Math.ceil(18 * worldAreaScale); index++) {
         const particle = scene.add.rectangle(
-            Phaser.Math.Between(0, scene.scale.width),
-            Phaser.Math.Between(0, scene.scale.height),
+            Phaser.Math.Between(0, worldWidth),
+            Phaser.Math.Between(0, worldHeight),
             Phaser.Math.Between(3, 6),
             Phaser.Math.Between(5, 10),
             0xffffff,
             0.58
-        ).setScrollFactor(0).setDepth(79).setAngle(Phaser.Math.Between(-35, 35));
+        ).setDepth(79).setAngle(Phaser.Math.Between(-35, 35));
         seasonEffects.particles.push(particle);
     }
 }
@@ -330,12 +344,17 @@ function updateSeasonEffects(scene, delta) {
 
         particle.x += Math.sin((scene.time.now + particle.y * 5) * 0.001) * delta * style.speedX;
         particle.y += delta * style.speedY;
-        if (particle.y > scene.scale.height + 12) {
+        if (particle.y > seasonEffects.worldHeight + 12) {
             particle.y = -12;
-            particle.x = Phaser.Math.Between(0, scene.scale.width);
+            particle.x = Phaser.Math.Between(0, seasonEffects.worldWidth);
         } else if (particle.y < -12) {
-            particle.y = scene.scale.height + 12;
-            particle.x = Phaser.Math.Between(0, scene.scale.width);
+            particle.y = seasonEffects.worldHeight + 12;
+            particle.x = Phaser.Math.Between(0, seasonEffects.worldWidth);
+        }
+        if (particle.x < -12) {
+            particle.x = seasonEffects.worldWidth + 12;
+        } else if (particle.x > seasonEffects.worldWidth + 12) {
+            particle.x = -12;
         }
     });
 }
